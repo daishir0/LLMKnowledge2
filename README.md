@@ -1,15 +1,43 @@
+5. Set up the SQLite database:
+```bash
+# Initialize the database file
+python initialize_database.py
+chmod 666 knowledge.db
+```
+
+Note: `initialize_database.py` creates a new database with all necessary tables for the application. Existing databases will be overwritten, so be sure to backup any important data beforehand.
+
+6. Configure your web server:
+5. Set up the SQLite database:
+```bash
+# Initialize the database file
+python initialize_database.py
+chmod 666 knowledge.db
+```
+
+Note: `initialize_database.py` creates a new database with all necessary tables for the application. Existing databases will be overwritten, so be sure to backup any important data beforehand.
+
+6. Configure your web server:
+5. Set up the SQLite database:
+```bash
+# Initialize the database file
+python initialize_database.py
+chmod 666 knowledge.db
+```
+
+Note: `initialize_database.py` creates a new database with all necessary tables for the application. Existing databases will be overwritten, so be sure to backup any important data beforehand.
+
+6. Configure your web server:
+5. SQLiteデータベースのセットアップ：
+```bash
+# データベースファイルを初期化
+python initialize_database.py
+chmod 666 knowledge.db
+```
+
+注意: `initialize_database.py`は、アプリケーションで必要な全てのテーブルを含む新しいデータベースを作成します。既存のデータベースがある場合は上書きされるため、重要なデータは事前にバックアップしてください。
 ## Overview
 LLMKnowledge2 is a knowledge management system that allows you to store, organize, and generate knowledge entries using Large Language Models (LLMs). It features integration with OpenAI and Anthropic's Claude APIs to help generate and enhance knowledge entries.
-
-Key features:
-- Plain knowledge management
-- AI-assisted knowledge generation
-- Prompt template management
-- Version history tracking
-- Import/Export functionality
-- User authentication
-- Responsive web interface
-
 ## Installation
 1. Clone the repository:
 ```bash
