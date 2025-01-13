@@ -97,10 +97,7 @@ switch ($action) {
                 'title' => $_POST['title'],
                 'question' => $_POST['question'],
                 'answer' => $_POST['answer'],
-                'reference' => $_POST['reference'],
-                'parent_type' => $_POST['parent_type'],
-                'parent_id' => $_POST['parent_id'],
-                'prompt_id' => $_POST['prompt_id']
+                'reference' => $_POST['reference']
             ];
             
             if ($action === 'create') {
@@ -111,6 +108,9 @@ switch ($action) {
                     (:title, :question, :answer, :reference, :parent_type, :parent_id, :prompt_id, :created_by)
                 ");
                 $data['created_by'] = $_SESSION['user'];
+                $data['parent_type'] = $knowledge['parent_type'];
+                $data['parent_id'] = $knowledge['parent_id'];
+                $data['prompt_id'] = $knowledge['prompt_id'];
                 $stmt->execute($data);
                 $id = $pdo->lastInsertId();
             } else {
@@ -121,9 +121,6 @@ switch ($action) {
                         question = :question,
                         answer = :answer,
                         reference = :reference,
-                        parent_type = :parent_type,
-                        parent_id = :parent_id,
-                        prompt_id = :prompt_id,
                         updated_at = CURRENT_TIMESTAMP
                     WHERE id = :id AND deleted = 0
                 ");
@@ -171,9 +168,6 @@ switch ($action) {
                 <button class="btn btn-outline-primary" type="submit">検索</button>
             </form>
         </div>
-        <div class="col text-end">
-            <a href="knowledge.php?action=create" class="btn btn-primary">新規作成</a>
-        </div>
     </div>
 
     <table class="table table-striped">
@@ -191,7 +185,11 @@ switch ($action) {
             <?php foreach ($records as $record): ?>
             <tr>
                 <td><?= h($record['id']) ?></td>
-                <td><?= h($record['title']) ?></td>
+                <td>
+                    <a href="knowledge.php?action=view&id=<?= h($record['id']) ?>">
+                        <?= h($record['title']) ?>
+                    </a>
+                </td>
                 <td>
                     <?php if ($record['parent_type'] === 'record'): ?>
                         <span class="badge bg-info">プレーン</span>
@@ -201,14 +199,12 @@ switch ($action) {
                     <?= h($record['parent_title']) ?>
                 </td>
                 <td><?= h($record['prompt_title']) ?></td>
-                <td><?= h($record['created_at']) ?></td>
+                <td><?= h(date('Y/m/d H:i', strtotime($record['created_at']))) ?></td>
                 <td>
-                    <a href="knowledge.php?action=view&id=<?= h($record['id']) ?>" 
-                       class="btn btn-sm btn-info">詳細</a>
-                    <a href="knowledge.php?action=edit&id=<?= h($record['id']) ?>" 
+                    <a href="knowledge.php?action=edit&id=<?= h($record['id']) ?>"
                        class="btn btn-sm btn-warning">編集</a>
-                    <a href="knowledge.php?action=delete&id=<?= h($record['id']) ?>" 
-                       class="btn btn-sm btn-danger" 
+                    <a href="knowledge.php?action=delete&id=<?= h($record['id']) ?>"
+                       class="btn btn-sm btn-danger"
                        onclick="return confirm('本当に削除しますか？')">削除</a>
                 </td>
             </tr>
@@ -245,13 +241,33 @@ switch ($action) {
                 <p>
                     <?php if ($knowledge['parent_type'] === 'record'): ?>
                         <span class="badge bg-info">プレーン</span>
+                        <a href="record.php?action=view&id=<?= h($knowledge['parent_id']) ?>">
+                            <?= h($knowledge['parent_title']) ?>
+                        </a>
                     <?php else: ?>
                         <span class="badge bg-success">ナレッジ</span>
+                        <a href="knowledge.php?action=view&id=<?= h($knowledge['parent_id']) ?>">
+                            <?= h($knowledge['parent_title']) ?>
+                        </a>
                     <?php endif; ?>
-                    <?= h($knowledge['parent_title']) ?>
                 </p>
             </div>
             
+            <div class="mb-3">
+                <h6>使用プロンプト</h6>
+                <p>
+                    <?php if ($knowledge['prompt_id']): ?>
+                        <a href="prompts.php?action=view&id=<?= h($knowledge['prompt_id']) ?>">
+                            <?= h($knowledge['prompt_title']) ?>
+                        </a>
+                    <?php else: ?>
+                        <?= h($knowledge['prompt_title']) ?>
+                    <?php endif; ?>
+                </p>
+            </div>
+
+            <hr>
+
             <div class="mb-3">
                 <h6>Question</h6>
                 <p><?= nl2br(h($knowledge['question'])) ?></p>
@@ -269,9 +285,44 @@ switch ($action) {
             </div>
             <?php endif; ?>
             
-            <div class="mb-3">
-                <h6>使用プロンプト</h6>
-                <p><?= h($knowledge['prompt_title']) ?></p>
+            <!-- Knowledge化タスク作成フォーム -->
+            <div class="mt-4 border-top pt-4">
+                <h6>Knowledge化タスク作成</h6>
+                <form id="taskForm" class="mt-3">
+                    <input type="hidden" name="action" value="create_task">
+                    <input type="hidden" name="source_type" value="knowledge">
+                    <input type="hidden" name="source_id" value="<?= h($knowledge['id']) ?>">
+                    <input type="hidden" name="source_text" value="<?= h($knowledge['answer']) ?>">
+                    
+                    <div class="mb-3">
+                        <label for="prompt_id" class="form-label">使用プロンプト</label>
+                        <select class="form-control" id="prompt_id" name="prompt_id" required>
+                            <option value="">選択してください</option>
+                            <?php
+                            $stmt = $pdo->query("
+                                SELECT id, title, content 
+                                FROM prompts 
+                                WHERE deleted = 0 
+                                AND category = 'knowledge_to_knowledge'
+                                ORDER BY title
+                            ");
+                            while ($prompt = $stmt->fetch(PDO::FETCH_ASSOC)):
+                            ?>
+                                <option value="<?= h($prompt['id']) ?>" 
+                                        data-content="<?= h($prompt['content']) ?>">
+                                    <?= h($prompt['title']) ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">プロンプト内容プレビュー</label>
+                        <pre class="border p-3 bg-light" id="prompt_preview"></pre>
+                    </div>
+                    
+                    <button type="button" id="createTaskButton" class="btn btn-primary">タスク作成</button>
+                </form>
             </div>
             
             <?php if ($childKnowledge): ?>
@@ -304,9 +355,9 @@ switch ($action) {
         <tbody>
             <?php foreach ($history as $entry): ?>
             <tr>
-                <td><?= h($entry['created_at']) ?></td>
+                <td><?= h(date('Y/m/d H:i', strtotime($entry['created_at']))) ?></td>
                 <td><?= h($entry['title']) ?></td>
-                <td><?= h($entry['modified_by_user']) ?></td>
+                <td><?= h($entry['modified_by']) ?></td>
             </tr>
             <?php endforeach; ?>
         </tbody>
@@ -316,7 +367,72 @@ switch ($action) {
         <a href="knowledge.php?action=list" class="btn btn-secondary">戻る</a>
         <a href="knowledge.php?action=edit&id=<?= h($knowledge['id']) ?>" 
            class="btn btn-warning">編集</a>
+        <button id="exportButton" class="btn btn-success" data-knowledge-id="<?= h($knowledge['id']) ?>">エクスポート</button>
     </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        $('#prompt_id').change(function() {
+            const selectedOption = $(this).find('option:selected');
+            const promptContent = selectedOption.data('content');
+            $('#prompt_preview').text(promptContent || '');
+        });
+
+        $('#createTaskButton').click(function() {
+            const $button = $(this);
+            $button.prop('disabled', true);
+
+            $.ajax({
+                url: 'common/api.php',
+                method: 'POST',
+                data: $('#taskForm').serialize(),
+                dataType: 'json',
+                success: function(response) {
+                    alert(response.message);
+                    if (!response.success) {
+                        $button.prop('disabled', false);
+                    } else {
+                        location.reload();
+                    }
+                },
+                error: function() {
+                    alert('通信エラーが発生しました。');
+                    $button.prop('disabled', false);
+                }
+            });
+        });
+
+        // エクスポート機能の追加
+        $('#exportButton').click(function(e) {
+            e.preventDefault();
+            const knowledgeId = $(this).data('knowledge-id');
+            
+            fetch(`common/export_knowledge.php?id=${knowledgeId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.message || '不明なエラーが発生しました');
+                        });
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `${knowledgeId}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    alert(error.message);
+                });
+        });
+    });
+    </script>
 
 <!-- 作成・編集画面 -->
 <?php else: ?>
@@ -333,88 +449,51 @@ switch ($action) {
         
         <div class="mb-3">
             <label class="form-label">親ナレッジタイプ</label>
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="parent_type" 
-                       id="parent_type_record" value="record" 
-                       <?= isset($knowledge) && $knowledge['parent_type'] === 'record' ? 'checked' : '' ?>>
-                <label class="form-check-label" for="parent_type_record">
-                    プレーンナレッジ
-                </label>
-            </div>
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="parent_type" 
-                       id="parent_type_knowledge" value="knowledge"
-                       <?= isset($knowledge) && $knowledge['parent_type'] === 'knowledge' ? 'checked' : '' ?>>
-                <label class="form-check-label" for="parent_type_knowledge">
-                    ナレッジ
-                </label>
-            </div>
+            <p>
+                <?php if ($knowledge['parent_type'] === 'record'): ?>
+                    <span class="badge bg-info">プレーンナレッジ</span>
+                <?php else: ?>
+                    <span class="badge bg-success">ナレッジ</span>
+                <?php endif; ?>
+            </p>
         </div>
         
         <div class="mb-3">
-        <label for="parent_id" class="form-label">親ナレッジ/プレーンナレッジ選択</label>
-            <select class="form-control" id="parent_id" name="parent_id" required>
-                <option value="">選択してください</option>
-                <?php
-                // プレーンナレッジ一覧
-                $stmt = $pdo->query("SELECT id, title FROM record WHERE deleted = 0 ORDER BY title");
-                $plain_records = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                if ($plain_records): ?>
-                    <optgroup label="プレーンナレッジ">
-                        <?php foreach ($plain_records as $record): ?>
-                            <option value="<?= h($record['id']) ?>" 
-                                    data-type="record"
-                                    <?= isset($knowledge) && $knowledge['parent_type'] === 'record' && 
-                                        $knowledge['parent_id'] === $record['id'] ? 'selected' : '' ?>>
-                                <?= h($record['title']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </optgroup>
-                <?php endif;
-
-                // ナレッジ一覧
-                $stmt = $pdo->query("SELECT id, title FROM knowledge WHERE deleted = 0 ORDER BY title");
-                $knowledge_records = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                if ($knowledge_records): ?>
-                    <optgroup label="ナレッジ">
-                        <?php foreach ($knowledge_records as $record): ?>
-                            <option value="<?= h($record['id']) ?>" 
-                                    data-type="knowledge"
-                                    <?= isset($knowledge) && $knowledge['parent_type'] === 'knowledge' && 
-                                        $knowledge['parent_id'] === $record['id'] ? 'selected' : '' ?>>
-                                <?= h($record['title']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </optgroup>
+            <label class="form-label">親ナレッジ/プレーンナレッジ</label>
+            <p>
+                <?php if ($knowledge['parent_type'] === 'record'): ?>
+                    <a href="record.php?action=view&id=<?= h($knowledge['parent_id']) ?>">
+                        <?= h($knowledge['parent_title']) ?>
+                    </a>
+                <?php else: ?>
+                    <a href="knowledge.php?action=view&id=<?= h($knowledge['parent_id']) ?>">
+                        <?= h($knowledge['parent_title']) ?>
+                    </a>
                 <?php endif; ?>
-            </select>
+            </p>
         </div>
 
         <div class="mb-3">
-            <label for="prompt_id" class="form-label">使用プロンプト</label>
-            <select class="form-control" id="prompt_id" name="prompt_id" required>
-                <option value="">選択してください</option>
-                <?php foreach ($prompts as $prompt): ?>
-                    <option value="<?= h($prompt['id']) ?>"
-                            <?= isset($knowledge) && $knowledge['prompt_id'] === $prompt['id'] ? 'selected' : '' ?>>
-                        <?= h($prompt['title']) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
+            <label class="form-label">使用プロンプト</label>
+            <p>
+                <?php if ($knowledge['prompt_id']): ?>
+                    <a href="prompts.php?action=view&id=<?= h($knowledge['prompt_id']) ?>">
+                        <?= h($knowledge['prompt_title']) ?>
+                    </a>
+                <?php else: ?>
+                    <?= h($knowledge['prompt_title']) ?>
+                <?php endif; ?>
+            </p>
         </div>
         
         <div class="mb-3">
             <label for="question" class="form-label">Question</label>
-            <textarea class="form-control" id="question" name="question" rows="3" required>
-                <?= isset($knowledge) ? h($knowledge['question']) : '' ?>
-            </textarea>
+            <textarea class="form-control" id="question" name="question" rows="3" required><?= isset($knowledge) ? h($knowledge['question']) : '' ?></textarea>
         </div>
         
         <div class="mb-3">
             <label for="answer" class="form-label">Answer</label>
-            <textarea class="form-control" id="answer" name="answer" rows="10" required>
-                <?= isset($knowledge) ? h($knowledge['answer']) : '' ?>
-            </textarea>
+            <textarea class="form-control" id="answer" name="answer" rows="10" required><?= isset($knowledge) ? h($knowledge['answer']) : '' ?></textarea>
         </div>
         
         <div class="mb-3">
@@ -426,25 +505,6 @@ switch ($action) {
         <button type="submit" class="btn btn-primary">保存</button>
         <a href="knowledge.php?action=list" class="btn btn-secondary">キャンセル</a>
     </form>
-
-    <script>
-        // 親ナレッジタイプの選択に応じてセレクトボックスの選択肢を制御
-        document.querySelectorAll('input[name="parent_type"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                const selectedType = this.value;
-                const options = document.querySelectorAll('#parent_id option');
-                
-                options.forEach(option => {
-                    if (option.value === '') return; // Skip placeholder option
-                    const optionType = option.getAttribute('data-type');
-                    option.style.display = optionType === selectedType ? '' : 'none';
-                    if (optionType !== selectedType) {
-                        option.selected = false;
-                    }
-                });
-            });
-        });
-    </script>
 <?php endif; ?>
 
 <?php require_once APP_ROOT . '/common/footer.php'; ?>

@@ -1,5 +1,6 @@
 <?php
 define('APP_ROOT', __DIR__);
+error_log("Debug - Loading prompts.php");
 require_once APP_ROOT . '/common/config.php';
 require_once APP_ROOT . '/common/functions.php';
 require_once APP_ROOT . '/common/auth.php';
@@ -42,6 +43,27 @@ switch ($action) {
         $pagination = getPagination($total, $perPage, $page);
         break;
 
+    case 'view_history':
+        $id = $_GET['id'] ?? 0;
+        $history_id = $_GET['history_id'] ?? 0;
+        
+        // 履歴データの取得
+        $stmt = $pdo->prepare("
+            SELECT h.*, u.username as modified_by_user
+            FROM prompt_history h
+            LEFT JOIN users u ON h.modified_by = u.id
+            WHERE h.id = :history_id AND h.prompt_id = :prompt_id
+        ");
+        $stmt->execute([':history_id' => $history_id, ':prompt_id' => $id]);
+        $history = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$history) {
+            $_SESSION['error_message'] = "指定された履歴が見つかりません。";
+            header("Location: prompts.php?action=view&id=" . $id);
+            exit;
+        }
+        break;
+        
     case 'view':
         $id = $_GET['id'] ?? 0;
         // プロンプトの詳細情報を取得
@@ -80,31 +102,108 @@ switch ($action) {
             ];
             
             if ($action === 'create') {
-                $stmt = $pdo->prepare("
-                    INSERT INTO prompts (title, content, category, created_by)
-                    VALUES (:title, :content, :category, :created_by)
-                ");
-                $data['created_by'] = $_SESSION['user'];
-                $stmt->execute($data);
-                $id = $pdo->lastInsertId();
+                try {
+                    $pdo->beginTransaction();
+                    
+                    // プロンプトの作成
+                    $stmt = $pdo->prepare("
+                        INSERT INTO prompts (
+                            title,
+                            content,
+                            category,
+                            created_by,
+                            created_at,
+                            updated_at
+                        ) VALUES (
+                            :title,
+                            :content,
+                            :category,
+                            :created_by,
+                            datetime('now', 'localtime'),
+                            datetime('now', 'localtime')
+                        )
+                    ");
+                    $data['created_by'] = $_SESSION['user'];
+                    $stmt->execute($data);
+                    $id = $pdo->lastInsertId();
+                    
+                    // 履歴の記録
+                    $historyData = [
+                        'title' => $data['title'],
+                        'content' => $data['content']
+                    ];
+                    logHistory($pdo, 'prompt', $id, $historyData);
+                    
+                    $pdo->commit();
+                    
+                    // 一覧ページにリダイレクト
+                    header("Location: prompts.php?action=list");
+                    exit;
+                } catch (Exception $e) {
+                    $pdo->rollBack();
+                    throw $e;
+                }
             } else {
                 $id = $_GET['id'];
-                $stmt = $pdo->prepare("
-                    UPDATE prompts 
-                    SET title = :title,
-                        content = :content,
-                        category = :category,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE id = :id AND deleted = 0
-                ");
-                $data['id'] = $id;
-                $stmt->execute($data);
-                
-                // 履歴の記録
-                logHistory($pdo, 'prompt', $id, $data);
+                // POSTデータの検証
+                if (empty($_POST['title']) || empty($_POST['content']) || empty($_POST['category'])) {
+                    throw new Exception("Required fields are missing");
+                }
+
+                try {
+                    // プロンプトの更新
+                    $updateData = [
+                        'title' => $_POST['title'],
+                        'content' => $_POST['content'],
+                        'category' => $_POST['category'],
+                        'id' => $id
+                    ];
+                    
+                    $stmt = $pdo->prepare("
+                        UPDATE prompts
+                        SET title = :title,
+                            content = :content,
+                            category = :category,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = :id AND deleted = 0
+                    ");
+                    
+                    if (!$stmt->execute($updateData)) {
+                        throw new Exception("Failed to update prompt: " . print_r($stmt->errorInfo(), true));
+                    }
+
+                    // 履歴の記録（エラーが発生しても処理は続行）
+                    try {
+                        $historyData = [
+                            'title' => $_POST['title'],
+                            'content' => $_POST['content']
+                        ];
+                        
+                        if (!logHistory($pdo, 'prompt', $id, $historyData)) {
+                            error_log("Warning: Failed to log history for prompt ID: " . $id);
+                        }
+                    } catch (Exception $historyError) {
+                        error_log("Warning: History logging failed: " . $historyError->getMessage());
+                    }
+                    $success = date('Y-m-d H:i:s') . " Debug - Transaction committed successfully\n";
+                    file_put_contents(dirname(__FILE__) . '/common/logs.txt', $success, FILE_APPEND);
+                    
+                    // 詳細ページにリダイレクト
+                    header("Location: prompts.php?action=view&id=" . $id);
+                    exit;
+                    
+                } catch (Exception $e) {
+                    $pdo->rollBack();
+                    $error = date('Y-m-d H:i:s') . " Error in prompt update: " . $e->getMessage() . "\n";
+                    $error .= date('Y-m-d H:i:s') . " Debug - Stack trace: " . $e->getTraceAsString() . "\n";
+                    file_put_contents(dirname(__FILE__) . '/common/logs.txt', $error, FILE_APPEND);
+                    
+                    // エラーメッセージをセッションに保存
+                    $_SESSION['error_message'] = "プロンプトの更新に失敗しました。";
+                    header("Location: prompts.php?action=edit&id=" . $id);
+                    exit;
+                }
             }
-            
-            redirect('prompts.php?action=list');
         }
         
         if ($action === 'edit') {
@@ -161,7 +260,11 @@ switch ($action) {
             <?php foreach ($records as $record): ?>
             <tr>
                 <td><?= h($record['id']) ?></td>
-                <td><?= h($record['title']) ?></td>
+                <td>
+                    <a href="prompts.php?action=view&id=<?= h($record['id']) ?>">
+                        <?= h($record['title']) ?>
+                    </a>
+                </td>
                 <td>
                     <?php if ($record['category'] === 'plain_to_knowledge'): ?>
                         <span class="badge bg-info">プレーン→ナレッジ</span>
@@ -170,15 +273,13 @@ switch ($action) {
                     <?php endif; ?>
                 </td>
                 <td><?= h($record['usage_count']) ?></td>
-                <td><?= h($record['created_at']) ?></td>
+                <td><?= h(date('Y/m/d H:i', strtotime($record['created_at']))) ?></td>
                 <td>
-                    <a href="prompts.php?action=view&id=<?= h($record['id']) ?>" 
-                       class="btn btn-sm btn-info">詳細</a>
-                    <a href="prompts.php?action=edit&id=<?= h($record['id']) ?>" 
+                    <a href="prompts.php?action=edit&id=<?= h($record['id']) ?>"
                        class="btn btn-sm btn-warning">編集</a>
                     <?php if ($record['usage_count'] == 0): ?>
-                        <a href="prompts.php?action=delete&id=<?= h($record['id']) ?>" 
-                           class="btn btn-sm btn-danger" 
+                        <a href="prompts.php?action=delete&id=<?= h($record['id']) ?>"
+                           class="btn btn-sm btn-danger"
                            onclick="return confirm('本当に削除しますか？')">削除</a>
                     <?php endif; ?>
                 </td>
@@ -202,6 +303,31 @@ switch ($action) {
         </ul>
     </nav>
     <?php endif; ?>
+
+<!-- 履歴詳細表示画面 -->
+<?php elseif ($action === 'view_history'): ?>
+    <h1 class="mb-4">プロンプト履歴詳細</h1>
+    
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title"><?= h($history['title']) ?></h5>
+            
+            <div class="mb-3">
+                <h6>プロンプト内容</h6>
+                <pre class="border p-3 bg-light"><?= h($history['content']) ?></pre>
+            </div>
+            
+            <div class="mb-3">
+                <h6>変更情報</h6>
+                <p>変更日時：<?= h(date('Y/m/d H:i', strtotime($history['created_at']))) ?></p>
+                <p>変更者：<?= h($history['modified_by_user'] ?? '未設定') ?></p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mb-4">
+        <a href="prompts.php?action=view&id=<?= h($id) ?>" class="btn btn-secondary">戻る</a>
+    </div>
 
 <!-- 詳細表示画面 -->
 <?php elseif ($action === 'view'): ?>
@@ -259,8 +385,12 @@ switch ($action) {
             <?php foreach ($history as $entry): ?>
             <tr>
                 <td><?= h($entry['created_at']) ?></td>
-                <td><?= h($entry['title']) ?></td>
-                <td><?= h($entry['modified_by_user']) ?></td>
+                <td>
+                    <a href="prompts.php?action=view_history&id=<?= h($prompt['id']) ?>&history_id=<?= h($entry['id']) ?>">
+                        <?= h($entry['title']) ?>
+                    </a>
+                </td>
+                <td><?= h($entry['modified_by']) ?></td>
             </tr>
             <?php endforeach; ?>
         </tbody>
@@ -307,9 +437,7 @@ switch ($action) {
         
         <div class="mb-3">
             <label for="content" class="form-label">プロンプト内容</label>
-            <textarea class="form-control" id="content" name="content" rows="10" required>
-                <?= isset($prompt) ? h($prompt['content']) : '' ?>
-            </textarea>
+            <textarea class="form-control" id="content" name="content" rows="10" required><?= isset($prompt) ? h($prompt['content']) : '' ?></textarea>
         </div>
         
         <button type="submit" class="btn btn-primary">保存</button>

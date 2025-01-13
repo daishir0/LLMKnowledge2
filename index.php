@@ -13,6 +13,27 @@ $knowledgeCount = $stmt->fetchColumn();
 
 $stmt = $pdo->query("SELECT COUNT(*) FROM prompts WHERE deleted = 0");
 $promptCount = $stmt->fetchColumn();
+
+// tasksテーブルの存在チェック
+$stmt = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='tasks'");
+$tasksTableExists = $stmt->fetchColumn();
+
+if ($tasksTableExists) {
+    // タスクの総数とステータス別の数を取得
+    $stmt = $pdo->query("SELECT COUNT(*) FROM tasks WHERE deleted = 0");
+    $taskCount = $stmt->fetchColumn();
+    
+    $stmt = $pdo->query("
+        SELECT status, COUNT(*) as count 
+        FROM tasks 
+        WHERE deleted = 0 
+        GROUP BY status
+    ");
+    $taskStats = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+} else {
+    $taskCount = 0;
+    $taskStats = [];
+}
 ?>
 
 <div class="row mb-4">
@@ -23,8 +44,8 @@ $promptCount = $stmt->fetchColumn();
 </div>
 
 <!-- 統計情報 -->
-<div class="row mb-4">
-    <div class="col-md-4">
+<div class="row mb-3">
+    <div class="col-md-3">
         <div class="card bg-primary text-white">
             <div class="card-body">
                 <h5 class="card-title">プレーンナレッジ</h5>
@@ -33,7 +54,7 @@ $promptCount = $stmt->fetchColumn();
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card bg-success text-white">
             <div class="card-body">
                 <h5 class="card-title">ナレッジ</h5>
@@ -42,12 +63,66 @@ $promptCount = $stmt->fetchColumn();
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card bg-info text-white">
             <div class="card-body">
                 <h5 class="card-title">プロンプト</h5>
                 <p class="card-text display-4"><?= h($promptCount) ?></p>
                 <p class="card-text">登録件数</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h5 class="card-title">残タスク</h5>
+                <p class="card-text display-4"><?= h($taskStats['pending'] ?? 0) ?></p>
+                <p class="card-text">未処理タスク数</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- タスク統計 -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Knowledge化タスク</h5>
+                <p class="card-text display-4"><?= h($taskCount) ?></p>
+                <p class="card-text">総タスク数</p>
+                <div class="mt-3">
+                    <a href="tasks.php" class="btn btn-primary">タスク管理</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">タスクステータス</h5>
+                <div class="row text-center">
+                    <div class="col">
+                        <div class="badge bg-warning mb-2">Pending</div>
+                        <p class="h4"><?= h($taskStats['pending'] ?? 0) ?></p>
+                    </div>
+                    <div class="col">
+                        <div class="badge bg-primary mb-2">Processing</div>
+                        <p class="h4"><?= h($taskStats['processing'] ?? 0) ?></p>
+                    </div>
+                    <div class="col">
+                        <div class="badge bg-success mb-2">Completed</div>
+                        <p class="h4"><?= h($taskStats['completed'] ?? 0) ?></p>
+                    </div>
+                    <div class="col">
+                        <div class="badge bg-danger mb-2">Failed</div>
+                        <p class="h4"><?= h($taskStats['failed'] ?? 0) ?></p>
+                    </div>
+                    <div class="col">
+                        <div class="badge bg-secondary mb-2">Cancelled</div>
+                        <p class="h4"><?= h($taskStats['cancelled'] ?? 0) ?></p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -64,7 +139,6 @@ $promptCount = $stmt->fetchColumn();
                     <a href="record.php?action=list" class="btn btn-primary me-2">一覧表示</a>
                     <a href="record.php?action=create" class="btn btn-outline-primary me-2">新規作成</a>
                     <div class="mt-2">
-                        <a href="export.php?type=plain" class="btn btn-outline-secondary btn-sm me-2">エクスポート</a>
                         <a href="import.php" class="btn btn-outline-secondary btn-sm">インポート</a>
                     </div>
                 </div>
@@ -81,7 +155,6 @@ $promptCount = $stmt->fetchColumn();
                     <a href="knowledge.php?action=list" class="btn btn-success me-2">一覧表示</a>
                     <a href="knowledge.php?action=create" class="btn btn-outline-success me-2">新規作成</a>
                     <div class="mt-2">
-                        <a href="export.php?type=knowledge" class="btn btn-outline-secondary btn-sm me-2">エクスポート</a>
                         <a href="import.php" class="btn btn-outline-secondary btn-sm">インポート</a>
                     </div>
                 </div>

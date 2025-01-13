@@ -54,9 +54,8 @@ function getPagination($total, $perPage, $currentPage) {
 
 function getHistory($pdo, $table, $id) {
     $stmt = $pdo->prepare("
-        SELECT h.*, u.username as modified_by_user
+        SELECT h.*
         FROM {$table}_history h
-        LEFT JOIN users u ON h.modified_by = u.id
         WHERE h.{$table}_id = :id
         ORDER BY h.created_at DESC
     ");
@@ -65,20 +64,54 @@ function getHistory($pdo, $table, $id) {
 }
 
 function logHistory($pdo, $table, $id, $data) {
-    $columns = implode(', ', array_keys($data));
-    $values = ':' . implode(', :', array_keys($data));
-    
-    $sql = "INSERT INTO {$table}_history 
-            ({$table}_id, $columns, modified_by) 
-            VALUES (:record_id, $values, :modified_by)";
-            
-    $stmt = $pdo->prepare($sql);
-    $params = array_combine(
-        array_map(function($key) { return ":$key"; }, array_keys($data)),
-        array_values($data)
-    );
-    $params[':record_id'] = $id;
-    $params[':modified_by'] = getCurrentUser();
-    
-    return $stmt->execute($params);
+    try {
+        // 必要なカラムのみを抽出（categoryは除外）
+        $validColumns = ['title', 'content'];
+        $filteredData = array_intersect_key($data, array_flip($validColumns));
+        
+        // カラムとプレースホルダーを構築
+        $columnNames = array_keys($filteredData);
+        $columns = implode(', ', $columnNames);
+        $placeholders = implode(', ', array_map(function($col) {
+            return ":param_$col";
+        }, $columnNames));
+        
+        // SQLクエリを構築
+        $sql = "INSERT INTO {$table}_history
+                ({$table}_id, $columns, modified_by, created_at)
+                VALUES (:table_id, $placeholders, :modified_by, datetime('now', 'localtime'))";
+        
+        // パラメータを設定
+        $params = [];
+        foreach ($filteredData as $key => $value) {
+            $params[":param_$key"] = $value;
+        }
+        $params[':table_id'] = $id;
+        $params[':modified_by'] = getCurrentUser();
+        
+        // デバッグ用にSQLとパラメータを出力
+        $log = date('Y-m-d H:i:s') . " Debug - SQL: " . $sql . "\n";
+        $log .= date('Y-m-d H:i:s') . " Debug - Params: " . print_r($params, true) . "\n";
+        file_put_contents(dirname(__FILE__) . '/logs.txt', $log, FILE_APPEND);
+        
+        // クエリを実行
+        $stmt = $pdo->prepare($sql);
+        if (!$stmt) {
+            $error = date('Y-m-d H:i:s') . " Debug - Prepare Error: " . print_r($pdo->errorInfo(), true) . "\n";
+            file_put_contents(dirname(__FILE__) . '/logs.txt', $error, FILE_APPEND);
+            return false;
+        }
+        
+        $result = $stmt->execute($params);
+        if (!$result) {
+            $error = date('Y-m-d H:i:s') . " Debug - Execute Error: " . print_r($stmt->errorInfo(), true) . "\n";
+            file_put_contents(dirname(__FILE__) . '/logs.txt', $error, FILE_APPEND);
+        }
+        return $result;
+    } catch (PDOException $e) {
+        $error = date('Y-m-d H:i:s') . " Debug - PDO Error: " . $e->getMessage() . "\n";
+        $error .= date('Y-m-d H:i:s') . " Debug - Trace: " . $e->getTraceAsString() . "\n";
+        file_put_contents(dirname(__FILE__) . '/logs.txt', $error, FILE_APPEND);
+        return false;
+    }
 }

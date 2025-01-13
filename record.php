@@ -10,7 +10,147 @@ $searchTerm = $_GET['search'] ?? '';
 $page = max(1, intval($_GET['page'] ?? 1));
 $perPage = 10;
 
+// MarkItDownClientの読み込み
+require_once APP_ROOT . '/common/MarkItDownClient.php';
+
 switch ($action) {
+    case 'upload':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
+            try {
+                // デバッグログの追加
+                error_log('Upload started. File info: ' . print_r($_FILES['file'], true), 3, './common/logs.txt');
+
+                // ファイルの一時保存
+                $tmpPath = '/tmp/' . basename($_FILES['file']['name']);
+                error_log('Attempting to move file to: ' . $tmpPath, 3, './common/logs.txt');
+
+                if (!move_uploaded_file($_FILES['file']['tmp_name'], $tmpPath)) {
+                    error_log('Failed to move uploaded file. Upload error code: ' . $_FILES['file']['error'], 3, './common/logs.txt');
+                    throw new Exception('ファイルのアップロードに失敗しました。');
+                }
+
+                error_log('File moved successfully. Initializing MarkItDown client...', 3, './common/logs.txt');
+
+                // MarkItDownClientの初期化
+                $client = new MarkItDownClient(
+                    $api_config['markitdown']['base_url'],
+                    $api_config['markitdown']['api_key']
+                );
+
+                error_log('Converting file to Markdown...', 3, './common/logs.txt');
+
+                // ファイルをMarkdownに変換
+                $result = $client->convertToMarkdown($tmpPath);
+                
+                error_log('Conversion successful. Result: ' . print_r($result, true), 3, './common/logs.txt');
+
+                // 一時ファイルの削除
+                unlink($tmpPath);
+
+                // recordテーブルに保存
+                $stmt = $pdo->prepare("
+                    INSERT INTO record (title, text, created_by)
+                    VALUES (:title, :text, :created_by)
+                ");
+                
+                $data = [
+                    'title' => $_FILES['file']['name'],
+                    'text' => $result['markdown'],
+                    'created_by' => $_SESSION['user']
+                ];
+                
+                $stmt->execute($data);
+                $id = $pdo->lastInsertId();
+
+                // 成功メッセージをセット
+                $_SESSION['success_message'] = 'ファイルが正常にアップロードされ、変換されました。';
+                redirect('record.php?action=view&id=' . $id);
+
+            } catch (Exception $e) {
+                error_log('Error in file upload: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 3, './common/logs.txt');
+                // エラーメッセージをセット
+                $_SESSION['error_message'] = 'エラーが発生しました: ' . $e->getMessage();
+                redirect('record.php?action=list');
+            }
+        }
+        break;
+
+    case 'create_task':
+        error_log('POST received: ' . print_r($_POST, true), 3, './common/logs.txt');
+        error_log('REQUEST_METHOD: ' . $_SERVER['REQUEST_METHOD'], 3, './common/logs.txt');
+        
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // セッションの確認
+            error_log('Session user: ' . print_r($_SESSION, true), 3, './common/logs.txt');
+            error_log('Task creation started: ' . print_r($_POST, true), 3, './common/logs.txt');
+            
+            // プロンプトの取得
+            $stmt = $pdo->prepare("
+                SELECT content 
+                FROM prompts 
+                WHERE id = :prompt_id 
+                AND deleted = 0
+            ");
+            // プロンプトIDの確認
+            error_log('Prompt ID: ' . $_POST['prompt_id'], 3, './common/logs.txt');
+            $stmt->execute([':prompt_id' => $_POST['prompt_id']]);
+            $prompt = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            error_log('Prompt found: ' . print_r($prompt, true), 3, './common/logs.txt');  // デバッグログ
+
+            if ($prompt) {
+                try {
+                    $pdo->beginTransaction();
+
+                    $stmt = $pdo->prepare("
+                        INSERT INTO tasks (
+                            source_type,
+                            source_id,
+                            source_text,
+                            prompt_content,
+                            created_by,
+                            status
+                        ) VALUES (
+                            :source_type,
+                            :source_id,
+                            :source_text,
+                            :prompt_content,
+                            :created_by,
+                            'pending'
+                        )
+                    ");
+                    
+                    $params = [
+                        ':source_type' => $_POST['source_type'],
+                        ':source_id' => $_POST['source_id'],
+                        ':source_text' => $_POST['source_text'],
+                        ':prompt_content' => $prompt['content'],
+                        ':created_by' => $_SESSION['user']
+                    ];
+                    
+                    error_log('Executing insert with params: ' . print_r($params, true), 3, './common/logs.txt');
+                    $stmt->execute($params);
+                    $taskId = $pdo->lastInsertId(); // 新しく追加されたタスクのID
+                    $pdo->commit();
+                    error_log('Task created successfully', 3, './common/logs.txt');
+
+                    // リダイレクトの代わりに完了フラグを設定
+                    $taskCreated = true;
+                    $sourceId = $_POST['source_id'];
+                } catch (PDOException $e) {
+                    $pdo->rollBack();
+                    error_log('Database error: ' . $e->getMessage(), 3, './common/logs.txt');
+                    $_SESSION['error_message'] = 'タスクの作成に失敗しました。';
+                    redirect('record.php?action=view&id=' . $_POST['source_id']);
+                }
+            } else {
+                error_log('Prompt not found', 3, './common/logs.txt');  // デバッグログ
+                $_SESSION['error_message'] = 'プロンプトが見つかりませんでした。';
+                redirect('record.php?action=view&id=' . $_POST['source_id']);
+            }
+        }
+        break;
+
     case 'list':
         // 検索処理
         if ($searchTerm) {
@@ -112,6 +252,22 @@ switch ($action) {
 <?php if ($action === 'list'): ?>
     <h1 class="mb-4">プレーンナレッジ管理</h1>
     
+    <?php if (isset($_SESSION['success_message'])): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <?= h($_SESSION['success_message']) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <?php unset($_SESSION['success_message']); ?>
+    <?php endif; ?>
+
+    <?php if (isset($_SESSION['error_message'])): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <?= h($_SESSION['error_message']) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <?php unset($_SESSION['error_message']); ?>
+    <?php endif; ?>
+    
     <div class="row mb-4">
         <div class="col">
             <form class="d-flex" method="GET" action="record.php">
@@ -122,7 +278,34 @@ switch ($action) {
             </form>
         </div>
         <div class="col text-end">
-            <a href="record.php?action=create" class="btn btn-primary">新規作成</a>
+            <a href="record.php?action=create" class="btn btn-primary me-2">新規作成</a>
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                アップロード
+            </button>
+        </div>
+
+        <!-- アップロードモーダル -->
+        <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="uploadModalLabel">ファイルアップロード</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form action="record.php?action=upload" method="post" enctype="multipart/form-data">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="file" class="form-label">ファイル選択</label>
+                                <input type="file" class="form-control" id="file" name="file" required>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                            <button type="submit" class="btn btn-primary">アップロード</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -140,16 +323,18 @@ switch ($action) {
             <?php foreach ($records as $record): ?>
             <tr>
                 <td><?= h($record['id']) ?></td>
-                <td><?= h($record['title']) ?></td>
-                <td><?= h($record['created_at']) ?></td>
-                <td><?= h($record['updated_at']) ?></td>
                 <td>
-                    <a href="record.php?action=view&id=<?= h($record['id']) ?>" 
-                       class="btn btn-sm btn-info">詳細</a>
-                    <a href="record.php?action=edit&id=<?= h($record['id']) ?>" 
+                    <a href="record.php?action=view&id=<?= h($record['id']) ?>">
+                        <?= h($record['title']) ?>
+                    </a>
+                </td>
+                <td><?= h(date('Y/m/d H:i', strtotime($record['created_at']))) ?></td>
+                <td><?= h(date('Y/m/d H:i', strtotime($record['updated_at']))) ?></td>
+                <td>
+                    <a href="record.php?action=edit&id=<?= h($record['id']) ?>"
                        class="btn btn-sm btn-warning">編集</a>
-                    <a href="record.php?action=delete&id=<?= h($record['id']) ?>" 
-                       class="btn btn-sm btn-danger" 
+                    <a href="record.php?action=delete&id=<?= h($record['id']) ?>"
+                       class="btn btn-sm btn-danger"
                        onclick="return confirm('本当に削除しますか？')">削除</a>
                 </td>
             </tr>
@@ -176,10 +361,53 @@ switch ($action) {
 <?php elseif ($action === 'view'): ?>
     <h1 class="mb-4">プレーンナレッジ詳細</h1>
     
+    <?php if (isset($_SESSION['error_message'])): ?>
+        <div class="alert alert-danger">
+            <?= h($_SESSION['error_message']) ?>
+        </div>
+        <?php unset($_SESSION['error_message']); ?>
+    <?php endif; ?>
+    
     <div class="card mb-4">
         <div class="card-body">
             <h5 class="card-title"><?= h($record['title']) ?></h5>
             <p class="card-text"><?= nl2br(h($record['text'])) ?></p>
+            
+            <!-- Knowledge化タスク作成フォーム -->
+            <div class="mt-4 border-top pt-4">
+                <h6>Knowledge化タスク作成</h6>
+                <form id="taskForm" class="mt-3">
+                    <input type="hidden" name="action" value="create_task">
+                    <input type="hidden" name="source_type" value="record">
+                    <input type="hidden" name="source_id" value="<?= h($record['id']) ?>">
+                    <div class="mb-3">
+                        <label for="prompt_id" class="form-label">使用プロンプト</label>
+                        <select class="form-control" id="prompt_id" name="prompt_id" required>
+                            <option value="">選択してください</option>
+                            <?php
+                            $stmt = $pdo->query("
+                                SELECT id, title, content 
+                                FROM prompts 
+                                WHERE deleted = 0 
+                                AND category = 'plain_to_knowledge'
+                                ORDER BY title
+                            ");
+                            while ($prompt = $stmt->fetch(PDO::FETCH_ASSOC)):
+                            ?>
+                                <option value="<?= h($prompt['id']) ?>" 
+                                        data-content="<?= h($prompt['content']) ?>">
+                                    <?= h($prompt['title']) ?>
+                                </option>
+                            <?php endwhile; ?>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">プロンプト内容プレビュー</label>
+                        <pre class="border p-3 bg-light" id="prompt_preview"></pre>
+                    </div>
+                    <button type="button" id="createTaskButton" class="btn btn-primary">タスク作成</button>
+                </form>
+            </div>
             
             <?php if (isset($record['knowledge_id'])): ?>
             <h6 class="mt-4">関連ナレッジ</h6>
@@ -191,6 +419,69 @@ switch ($action) {
             <?php endif; ?>
         </div>
     </div>
+
+    <!-- プロンプトプレビューのためのJavaScript -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        $('#prompt_id').change(function() {
+            const selectedOption = $(this).find('option:selected');
+            const promptContent = selectedOption.data('content');
+            $('#prompt_preview').text(promptContent || '');
+        });
+
+        $('#createTaskButton').click(function() {
+            const $button = $(this);
+            $button.prop('disabled', true);
+
+            $.ajax({
+                url: 'common/api.php',
+                method: 'POST',
+                data: $('#taskForm').serialize(),
+                dataType: 'json',
+                success: function(response) {
+                    alert(response.message);
+                    if (!response.success) {
+                        $button.prop('disabled', false);
+                    }
+                },
+                error: function() {
+                    alert('通信エラーが発生しました。');
+                    $button.prop('disabled', false);
+                }
+            });
+        });
+
+        // エクスポート機能の追加
+        $('#exportButton').click(function(e) {
+            e.preventDefault();
+            const recordId = $(this).data('record-id');
+            
+            fetch(`common/export_plain_knowledge.php?id=${recordId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.message || '不明なエラーが発生しました');
+                        });
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `${recordId}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    alert(error.message);
+                });
+        });
+    });
+    </script>
 
     <!-- 履歴表示 -->
     <h3 class="mb-3">変更履歴</h3>
@@ -205,9 +496,9 @@ switch ($action) {
         <tbody>
             <?php foreach ($history as $entry): ?>
             <tr>
-                <td><?= h($entry['created_at']) ?></td>
+                <td><?= h(date('Y/m/d H:i', strtotime($entry['created_at']))) ?></td>
                 <td><?= h($entry['title']) ?></td>
-                <td><?= h($entry['modified_by_user']) ?></td>
+                <td><?= h($entry['modified_by']) ?></td>
             </tr>
             <?php endforeach; ?>
         </tbody>
@@ -217,7 +508,23 @@ switch ($action) {
         <a href="record.php?action=list" class="btn btn-secondary">戻る</a>
         <a href="record.php?action=edit&id=<?= h($record['id']) ?>" 
            class="btn btn-warning">編集</a>
+        <button id="exportButton" class="btn btn-success" data-record-id="<?= h($record['id']) ?>">エクスポート</button>
     </div>
+
+<!-- タスク作成完了画面 -->
+<?php if (isset($taskCreated) && $taskCreated): ?>
+    <h1 class="mb-4">タスク作成完了</h1>
+    
+    <div class="alert alert-success">
+        <h4 class="alert-heading">タスクが正常に作成されました！</h4>
+        <p>Knowledge化タスクが正常に作成されました。タスク一覧から進捗を確認できます。</p>
+    </div>
+    
+    <div class="mt-4">
+        <a href="tasks.php" class="btn btn-primary">タスク一覧へ</a>
+        <a href="record.php?action=view&id=<?= h($sourceId) ?>" class="btn btn-secondary">元の記事に戻る</a>
+    </div>
+<?php endif; ?>
 
 <!-- 作成・編集画面 -->
 <?php else: ?>
@@ -234,9 +541,7 @@ switch ($action) {
         
         <div class="mb-3">
             <label for="text" class="form-label">内容</label>
-            <textarea class="form-control" id="text" name="text" rows="10" required>
-                <?= isset($record) ? h($record['text']) : '' ?>
-            </textarea>
+            <textarea class="form-control" id="text" name="text" rows="10" required><?= isset($record) ? h($record['text']) : '' ?></textarea>
         </div>
         
         <button type="submit" class="btn btn-primary">保存</button>
