@@ -1,6 +1,6 @@
 <?php
 // アプリケーションのベースURLを設定
-$base_url = '/knowledge';  // Webルートからの相対パス
+$base_url = '/LLMKnowledge2';  // Webルートからの相対パス
 define('BASE_URL', $base_url);
 
 $db_path = dirname(__DIR__) . '/knowledge.db';

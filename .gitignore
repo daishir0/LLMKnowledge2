@@ -1,0 +1,22 @@
+# データベースファイル
+*.db
+knowledge.db
+
+# 設定ファイル
+/common/config.php
+files.txt
+
+# ログファイル
+*.log
+
+# キャッシュファイル
+*.cache
+
+# OSが生成するファイル
+.DS_Store
+Thumbs.db
+
+# エディタの一時ファイル
+*.swp
+*.swo
+*~
