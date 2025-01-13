@@ -100,38 +100,79 @@ switch ($action) {
                 'reference' => $_POST['reference']
             ];
             
-            if ($action === 'create') {
-                $stmt = $pdo->prepare("
-                    INSERT INTO knowledge 
-                    (title, question, answer, reference, parent_type, parent_id, prompt_id, created_by)
-                    VALUES 
-                    (:title, :question, :answer, :reference, :parent_type, :parent_id, :prompt_id, :created_by)
-                ");
-                $data['created_by'] = $_SESSION['user'];
-                $data['parent_type'] = $knowledge['parent_type'];
-                $data['parent_id'] = $knowledge['parent_id'];
-                $data['prompt_id'] = $knowledge['prompt_id'];
-                $stmt->execute($data);
-                $id = $pdo->lastInsertId();
-            } else {
-                $id = $_GET['id'];
-                $stmt = $pdo->prepare("
-                    UPDATE knowledge 
-                    SET title = :title, 
-                        question = :question,
-                        answer = :answer,
-                        reference = :reference,
-                        updated_at = CURRENT_TIMESTAMP
-                    WHERE id = :id AND deleted = 0
-                ");
-                $data['id'] = $id;
-                $stmt->execute($data);
+            try {
+                $pdo->beginTransaction();
                 
-                // 履歴の記録
-                logHistory($pdo, 'knowledge', $id, $data);
+                if ($action === 'create') {
+                    $stmt = $pdo->prepare("
+                        INSERT INTO knowledge
+                        (title, question, answer, reference, parent_type, parent_id, prompt_id, created_by)
+                        VALUES
+                        (:title, :question, :answer, :reference, :parent_type, :parent_id, :prompt_id, :created_by)
+                    ");
+                    $data['created_by'] = $_SESSION['user'];
+                    $data['parent_type'] = $knowledge['parent_type'];
+                    $data['parent_id'] = $knowledge['parent_id'];
+                    $data['prompt_id'] = $knowledge['prompt_id'];
+                    $stmt->execute($data);
+                    $id = $pdo->lastInsertId();
+                    
+                    // 新規作成時も履歴を記録
+                    $historyStmt = $pdo->prepare("
+                        INSERT INTO knowledge_history
+                        (knowledge_id, title, question, answer, reference, modified_by)
+                        VALUES
+                        (:knowledge_id, :title, :question, :answer, :reference, :modified_by)
+                    ");
+                    $historyData = [
+                        'knowledge_id' => $id,
+                        'title' => $data['title'],
+                        'question' => $data['question'],
+                        'answer' => $data['answer'],
+                        'reference' => $data['reference'],
+                        'modified_by' => $_SESSION['user']
+                    ];
+                    $historyStmt->execute($historyData);
+                } else {
+                    $id = $_GET['id'];
+                    $stmt = $pdo->prepare("
+                        UPDATE knowledge
+                        SET title = :title,
+                            question = :question,
+                            answer = :answer,
+                            reference = :reference,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = :id AND deleted = 0
+                    ");
+                    $data['id'] = $id;
+                    $stmt->execute($data);
+                    
+                    // 履歴の記録
+                    $historyStmt = $pdo->prepare("
+                        INSERT INTO knowledge_history
+                        (knowledge_id, title, question, answer, reference, modified_by)
+                        VALUES
+                        (:knowledge_id, :title, :question, :answer, :reference, :modified_by)
+                    ");
+                    $historyData = [
+                        'knowledge_id' => $id,
+                        'title' => $data['title'],
+                        'question' => $data['question'],
+                        'answer' => $data['answer'],
+                        'reference' => $data['reference'],
+                        'modified_by' => $_SESSION['user']
+                    ];
+                    $historyStmt->execute($historyData);
+                }
+                
+                $pdo->commit();
+                redirect('knowledge.php?action=list');
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                error_log("Error in knowledge create/edit: " . $e->getMessage());
+                $_SESSION['error_message'] = "エラーが発生しました。";
+                redirect('knowledge.php?action=list');
             }
-            
-            redirect('knowledge.php?action=list');
         }
         
         if ($action === 'edit') {
@@ -349,6 +390,7 @@ switch ($action) {
             <tr>
                 <th>変更日時</th>
                 <th>タイトル</th>
+                <th>内容</th>
                 <th>変更者</th>
             </tr>
         </thead>
@@ -357,6 +399,41 @@ switch ($action) {
             <tr>
                 <td><?= h(date('Y/m/d H:i', strtotime($entry['created_at']))) ?></td>
                 <td><?= h($entry['title']) ?></td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#historyModal<?= h($entry['id']) ?>">
+                        内容を表示
+                    </button>
+                    
+                    <!-- 履歴内容モーダル -->
+                    <div class="modal fade" id="historyModal<?= h($entry['id']) ?>" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">履歴詳細</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <h6>タイトル</h6>
+                                    <p><?= h($entry['title']) ?></p>
+                                    <h6>Question</h6>
+                                    <p><?= nl2br(h($entry['question'])) ?></p>
+                                    <h6>Answer</h6>
+                                    <p><?= nl2br(h($entry['answer'])) ?></p>
+                                    <?php if ($entry['reference']): ?>
+                                    <h6>Reference</h6>
+                                    <p><a href="<?= h($entry['reference']) ?>" target="_blank"><?= h($entry['reference']) ?></a></p>
+                                    <?php endif; ?>
+                                    <p class="text-muted">
+                                        変更日時: <?= h(date('Y/m/d H:i', strtotime($entry['created_at']))) ?>
+                                    </p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
                 <td><?= h($entry['modified_by']) ?></td>
             </tr>
             <?php endforeach; ?>

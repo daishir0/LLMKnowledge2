@@ -59,12 +59,28 @@ switch ($action) {
                     'created_by' => $_SESSION['user']
                 ];
                 
-                $stmt->execute($data);
-                $id = $pdo->lastInsertId();
+                try {
+                    $pdo->beginTransaction();
+                    
+                    $stmt->execute($data);
+                    $id = $pdo->lastInsertId();
 
-                // 成功メッセージをセット
-                $_SESSION['success_message'] = 'ファイルが正常にアップロードされ、変換されました。';
-                redirect('record.php?action=view&id=' . $id);
+                    // 履歴の記録
+                    $historyData = [
+                        'title' => $data['title'],
+                        'text' => $data['text']
+                    ];
+                    logHistory($pdo, 'record', $id, $historyData);
+
+                    $pdo->commit();
+
+                    // 成功メッセージをセット
+                    $_SESSION['success_message'] = 'ファイルが正常にアップロードされ、変換されました。';
+                    redirect('record.php?action=view&id=' . $id);
+                } catch (Exception $e) {
+                    $pdo->rollBack();
+                    throw $e;
+                }
 
             } catch (Exception $e) {
                 error_log('Error in file upload: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 3, './common/logs.txt');
@@ -202,26 +218,48 @@ switch ($action) {
                 'text' => $_POST['text']
             ];
             
-            if ($action === 'create') {
-                $stmt = $pdo->prepare("
-                    INSERT INTO record (title, text, created_by)
-                    VALUES (:title, :text, :created_by)
-                ");
-                $data['created_by'] = $_SESSION['user'];
-                $stmt->execute($data);
-                $id = $pdo->lastInsertId();
-            } else {
-                $id = $_GET['id'];
-                $stmt = $pdo->prepare("
-                    UPDATE record 
-                    SET title = :title, text = :text, updated_at = CURRENT_TIMESTAMP
-                    WHERE id = :id AND deleted = 0
-                ");
-                $data['id'] = $id;
-                $stmt->execute($data);
-                
-                // 履歴の記録
-                logHistory($pdo, 'record', $id, $data);
+            try {
+                $pdo->beginTransaction();
+
+                if ($action === 'create') {
+                    $stmt = $pdo->prepare("
+                        INSERT INTO record (title, text, created_by)
+                        VALUES (:title, :text, :created_by)
+                    ");
+                    $data['created_by'] = $_SESSION['user'];
+                    $stmt->execute($data);
+                    $id = $pdo->lastInsertId();
+
+                    // 新規作成時も履歴を記録
+                    $historyData = [
+                        'title' => $data['title'],
+                        'text' => $data['text']
+                    ];
+                    logHistory($pdo, 'record', $id, $historyData);
+                } else {
+                    $id = $_GET['id'];
+                    $stmt = $pdo->prepare("
+                        UPDATE record 
+                        SET title = :title, text = :text, updated_at = CURRENT_TIMESTAMP
+                        WHERE id = :id AND deleted = 0
+                    ");
+                    $data['id'] = $id;
+                    $stmt->execute($data);
+                    
+                    // 履歴の記録
+                    $historyData = [
+                        'title' => $data['title'],
+                        'text' => $data['text']
+                    ];
+                    logHistory($pdo, 'record', $id, $historyData);
+                }
+
+                $pdo->commit();
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                error_log("Error in record create/edit: " . $e->getMessage());
+                $_SESSION['error_message'] = "エラーが発生しました。";
+                redirect('record.php?action=list');
             }
             
             redirect('record.php?action=list');
@@ -483,13 +521,14 @@ switch ($action) {
     });
     </script>
 
-    <!-- 履歴表示 -->
+        <!-- 履歴表示 -->
     <h3 class="mb-3">変更履歴</h3>
     <table class="table">
         <thead>
             <tr>
                 <th>変更日時</th>
                 <th>タイトル</th>
+                <th>内容</th>
                 <th>変更者</th>
             </tr>
         </thead>
@@ -498,6 +537,35 @@ switch ($action) {
             <tr>
                 <td><?= h(date('Y/m/d H:i', strtotime($entry['created_at']))) ?></td>
                 <td><?= h($entry['title']) ?></td>
+                <td>
+                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#historyModal<?= h($entry['id']) ?>">
+                        内容を表示
+                    </button>
+                    
+                    <!-- 履歴内容モーダル -->
+                    <div class="modal fade" id="historyModal<?= h($entry['id']) ?>" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">履歴詳細</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <h6>タイトル</h6>
+                                    <p><?= h($entry['title']) ?></p>
+                                    <h6>内容</h6>
+                                    <pre class="border p-3 bg-light"><?= h($entry['text']) ?></pre>
+                                    <p class="text-muted">
+                                        変更日時: <?= h(date('Y/m/d H:i', strtotime($entry['created_at']))) ?>
+                                    </p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
                 <td><?= h($entry['modified_by']) ?></td>
             </tr>
             <?php endforeach; ?>

@@ -7,7 +7,7 @@ knowledge.db
 files.txt
 
 # ログファイル
-*.log
+/common/logs.txt
 
 # キャッシュファイル
 *.cache
