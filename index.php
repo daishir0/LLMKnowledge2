@@ -83,50 +83,6 @@ if ($tasksTableExists) {
     </div>
 </div>
 
-<!-- タスク統計 -->
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Knowledge化タスク</h5>
-                <p class="card-text display-4"><?= h($taskCount) ?></p>
-                <p class="card-text">総タスク数</p>
-                <div class="mt-3">
-                    <a href="tasks.php" class="btn btn-primary">タスク管理</a>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">タスクステータス</h5>
-                <div class="row text-center">
-                    <div class="col">
-                        <div class="badge bg-warning mb-2">Pending</div>
-                        <p class="h4"><?= h($taskStats['pending'] ?? 0) ?></p>
-                    </div>
-                    <div class="col">
-                        <div class="badge bg-primary mb-2">Processing</div>
-                        <p class="h4"><?= h($taskStats['processing'] ?? 0) ?></p>
-                    </div>
-                    <div class="col">
-                        <div class="badge bg-success mb-2">Completed</div>
-                        <p class="h4"><?= h($taskStats['completed'] ?? 0) ?></p>
-                    </div>
-                    <div class="col">
-                        <div class="badge bg-danger mb-2">Failed</div>
-                        <p class="h4"><?= h($taskStats['failed'] ?? 0) ?></p>
-                    </div>
-                    <div class="col">
-                        <div class="badge bg-secondary mb-2">Cancelled</div>
-                        <p class="h4"><?= h($taskStats['cancelled'] ?? 0) ?></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- メインメニュー -->
 <div class="row mb-4">
@@ -138,9 +94,7 @@ if ($tasksTableExists) {
                 <div>
                     <a href="record.php?action=list" class="btn btn-primary me-2">一覧表示</a>
                     <a href="record.php?action=create" class="btn btn-outline-primary me-2">新規作成</a>
-                    <div class="mt-2">
-                        <a href="import.php" class="btn btn-outline-secondary btn-sm">インポート</a>
-                    </div>
+                    <a href="import.php" class="btn btn-outline-secondary me-2">インポート</a>
                 </div>
             </div>
         </div>
@@ -154,9 +108,7 @@ if ($tasksTableExists) {
                 <div>
                     <a href="knowledge.php?action=list" class="btn btn-success me-2">一覧表示</a>
                     <a href="knowledge.php?action=create" class="btn btn-outline-success me-2">新規作成</a>
-                    <div class="mt-2">
-                        <a href="import.php" class="btn btn-outline-secondary btn-sm">インポート</a>
-                    </div>
+                    <a href="import.php" class="btn btn-outline-secondary me-2">インポート</a>
                 </div>
             </div>
         </div>
@@ -194,33 +146,6 @@ if ($tasksTableExists) {
 
 <!-- 最近の更新 -->
 <div class="row">
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">最近更新されたナレッジ</h5>
-                <div class="list-group list-group-flush">
-                    <?php
-                    $stmt = $pdo->query("
-                        SELECT id, title, updated_at 
-                        FROM knowledge 
-                        WHERE deleted = 0 
-                        ORDER BY updated_at DESC 
-                        LIMIT 5
-                    ");
-                    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)): 
-                    ?>
-                        <a href="knowledge.php?action=view&id=<?= h($row['id']) ?>" 
-                           class="list-group-item list-group-item-action">
-                            <?= h($row['title']) ?>
-                            <small class="text-muted float-end">
-                                <?= h(date('Y/m/d H:i', strtotime($row['updated_at']))) ?>
-                            </small>
-                        </a>
-                    <?php endwhile; ?>
-                </div>
-            </div>
-        </div>
-    </div>
     
     <div class="col-md-6 mb-4">
         <div class="card">
@@ -249,6 +174,84 @@ if ($tasksTableExists) {
             </div>
         </div>
     </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">最近更新されたナレッジ</h5>
+                <div class="list-group list-group-flush">
+                    <?php
+                    $stmt = $pdo->query("
+                        SELECT id, title, updated_at 
+                        FROM knowledge 
+                        WHERE deleted = 0 
+                        ORDER BY updated_at DESC 
+                        LIMIT 5
+                    ");
+                    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)): 
+                    ?>
+                        <a href="knowledge.php?action=view&id=<?= h($row['id']) ?>" 
+                           class="list-group-item list-group-item-action">
+                            <?= h($row['title']) ?>
+                            <small class="text-muted float-end">
+                                <?= h(date('Y/m/d H:i', strtotime($row['updated_at']))) ?>
+                            </small>
+                        </a>
+                    <?php endwhile; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<!-- タスク統計 -->
+<div class="row mb-4">
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">タスクステータス</h5>
+                <div class="row text-center">
+                    <div class="col">
+                        <div class="badge bg-warning mb-2">Pending</div>
+                        <p class="h4"><?= h($taskStats['pending'] ?? 0) ?></p>
+                    </div>
+                    <div class="col">
+                        <div class="badge bg-primary mb-2">Processing</div>
+                        <p class="h4"><?= h($taskStats['processing'] ?? 0) ?></p>
+                    </div>
+                    <div class="col">
+                        <div class="badge bg-success mb-2">Completed</div>
+                        <p class="h4"><?= h($taskStats['completed'] ?? 0) ?></p>
+                    </div>
+                    <div class="col">
+                        <div class="badge bg-danger mb-2">Failed</div>
+                        <p class="h4"><?= h($taskStats['failed'] ?? 0) ?></p>
+                    </div>
+                    <div class="col">
+                        <div class="badge bg-secondary mb-2">Cancelled</div>
+                        <p class="h4"><?= h($taskStats['cancelled'] ?? 0) ?></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Knowledge化タスク</h5>
+                <p class="card-text display-4"><?= h($taskCount) ?></p>
+                <p class="card-text">総タスク数</p>
+                <div class="mt-3">
+                    <a href="tasks.php" class="btn btn-primary">タスク管理</a>
+                </div>
+            </div>
+        </div>
+    </div> -->
+
 </div>
 
 <?php require_once __DIR__ . '/common/footer.php'; ?>
