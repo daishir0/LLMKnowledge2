@@ -119,8 +119,8 @@ switch ($action) {
                             :content,
                             :category,
                             :created_by,
-                            datetime('now', 'localtime'),
-                            datetime('now', 'localtime')
+                            '$timestamp',
+                            '$timestamp'
                         )
                     ");
                     $data['created_by'] = $_SESSION['user'];
@@ -164,7 +164,7 @@ switch ($action) {
                         SET title = :title,
                             content = :content,
                             category = :category,
-                            updated_at = CURRENT_TIMESTAMP
+                            updated_at = '$timestamp'
                         WHERE id = :id AND deleted = 0
                     ");
                     
@@ -217,7 +217,7 @@ switch ($action) {
         if (isset($_GET['id'])) {
             $stmt = $pdo->prepare("
                 UPDATE prompts 
-                SET deleted = 1, updated_at = CURRENT_TIMESTAMP 
+                SET deleted = 1, updated_at = '$timestamp'
                 WHERE id = :id
             ");
             $stmt->execute([':id' => $_GET['id']]);

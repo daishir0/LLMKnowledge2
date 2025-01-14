@@ -75,8 +75,8 @@ try {
         case 'plain':
             while (($data = fgetcsv($handle)) !== false) {
                 $stmt = $pdo->prepare("
-                    INSERT INTO record (title, text, created_by)
-                    VALUES (:title, :text, :created_by)
+                    INSERT INTO record (title, text, created_by, created_at, updated_at)
+                    VALUES (:title, :text, :created_by, '$timestamp', '$timestamp')
                 ");
                 
                 $stmt->execute([

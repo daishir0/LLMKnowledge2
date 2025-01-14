@@ -106,9 +106,9 @@ switch ($action) {
                 if ($action === 'create') {
                     $stmt = $pdo->prepare("
                         INSERT INTO knowledge
-                        (title, question, answer, reference, parent_type, parent_id, prompt_id, created_by)
+                        (title, question, answer, reference, parent_type, parent_id, prompt_id, created_by, created_at, updated_at)
                         VALUES
-                        (:title, :question, :answer, :reference, :parent_type, :parent_id, :prompt_id, :created_by)
+                        (:title, :question, :answer, :reference, :parent_type, :parent_id, :prompt_id, :created_by, '$timestamp', '$timestamp')
                     ");
                     $data['created_by'] = $_SESSION['user'];
                     $data['parent_type'] = $knowledge['parent_type'];
@@ -120,9 +120,9 @@ switch ($action) {
                     // 新規作成時も履歴を記録
                     $historyStmt = $pdo->prepare("
                         INSERT INTO knowledge_history
-                        (knowledge_id, title, question, answer, reference, modified_by)
+                        (knowledge_id, title, question, answer, reference, modified_by, created_at)
                         VALUES
-                        (:knowledge_id, :title, :question, :answer, :reference, :modified_by)
+                        (:knowledge_id, :title, :question, :answer, :reference, :modified_by, '$timestamp')
                     ");
                     $historyData = [
                         'knowledge_id' => $id,
@@ -141,7 +141,7 @@ switch ($action) {
                             question = :question,
                             answer = :answer,
                             reference = :reference,
-                            updated_at = CURRENT_TIMESTAMP
+                            updated_at = '$timestamp'
                         WHERE id = :id AND deleted = 0
                     ");
                     $data['id'] = $id;
@@ -150,9 +150,9 @@ switch ($action) {
                     // 履歴の記録
                     $historyStmt = $pdo->prepare("
                         INSERT INTO knowledge_history
-                        (knowledge_id, title, question, answer, reference, modified_by)
+                        (knowledge_id, title, question, answer, reference, modified_by, created_at)
                         VALUES
-                        (:knowledge_id, :title, :question, :answer, :reference, :modified_by)
+                        (:knowledge_id, :title, :question, :answer, :reference, :modified_by, '$timestamp')
                     ");
                     $historyData = [
                         'knowledge_id' => $id,
@@ -186,7 +186,7 @@ switch ($action) {
         if (isset($_GET['id'])) {
             $stmt = $pdo->prepare("
                 UPDATE knowledge 
-                SET deleted = 1, updated_at = CURRENT_TIMESTAMP 
+                SET deleted = 1, updated_at = '$timestamp'
                 WHERE id = :id
             ");
             $stmt->execute([':id' => $_GET['id']]);

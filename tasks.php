@@ -98,7 +98,7 @@ switch ($action) {
             $stmt = $pdo->prepare("
                 UPDATE tasks 
                 SET status = 'cancelled', 
-                    updated_at = CURRENT_TIMESTAMP 
+                    updated_at = '$timestamp'
                 WHERE id = :id 
                 AND status = 'pending'
                 AND deleted = 0

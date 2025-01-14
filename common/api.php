@@ -45,6 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 source_text,
                                 prompt_content,
                                 created_by,
+                                created_at,
+                                updated_at,
                                 status
                             ) VALUES (
                                 :source_type,
@@ -52,6 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 :source_text,
                                 :prompt_content,
                                 :created_by,
+                                '$timestamp',
+                                '$timestamp',
                                 'pending'
                             )
                         ");
@@ -89,8 +93,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             if ($title && $text) {
                 try {
                     $stmt = $pdo->prepare("
-                        INSERT INTO record (title, text)
-                        VALUES (:title, :text)
+                        INSERT INTO record (title, text, created_at, updated_at)
+                        VALUES (:title, :text, '$timestamp', '$timestamp')
                     ");
                     
                     $stmt->execute([

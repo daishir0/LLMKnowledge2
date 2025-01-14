@@ -21,10 +21,10 @@ require_once __DIR__ . '/auth.php';
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" href="<?= BASE_URL ?>/record.php?action=list">プレーンナレッジ</a>
+                        <a class="nav-link" href="<?= BASE_URL ?>/record.php?action=list">プレーンナレッジ管理</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="<?= BASE_URL ?>/knowledge.php">ナレッジ</a>
+                        <a class="nav-link" href="<?= BASE_URL ?>/knowledge.php">ナレッジ管理</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="<?= BASE_URL ?>/prompts.php">プロンプト管理</a>

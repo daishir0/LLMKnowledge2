@@ -49,8 +49,8 @@ switch ($action) {
 
                 // recordテーブルに保存
                 $stmt = $pdo->prepare("
-                    INSERT INTO record (title, text, created_by)
-                    VALUES (:title, :text, :created_by)
+                    INSERT INTO record (title, text, created_by, created_at, updated_at)
+                    VALUES (:title, :text, :created_by, '$timestamp', '$timestamp')
                 ");
                 
                 $data = [
@@ -125,6 +125,8 @@ switch ($action) {
                             source_text,
                             prompt_content,
                             created_by,
+                            created_at,
+                            updated_at,
                             status
                         ) VALUES (
                             :source_type,
@@ -132,6 +134,8 @@ switch ($action) {
                             :source_text,
                             :prompt_content,
                             :created_by,
+                            '$timestamp',
+                            '$timestamp',
                             'pending'
                         )
                     ");
@@ -223,8 +227,8 @@ switch ($action) {
 
                 if ($action === 'create') {
                     $stmt = $pdo->prepare("
-                        INSERT INTO record (title, text, created_by)
-                        VALUES (:title, :text, :created_by)
+                        INSERT INTO record (title, text, created_by, created_at, updated_at)
+                        VALUES (:title, :text, :created_by, '$timestamp', '$timestamp')
                     ");
                     $data['created_by'] = $_SESSION['user'];
                     $stmt->execute($data);
@@ -240,7 +244,7 @@ switch ($action) {
                     $id = $_GET['id'];
                     $stmt = $pdo->prepare("
                         UPDATE record 
-                        SET title = :title, text = :text, updated_at = CURRENT_TIMESTAMP
+                        SET title = :title, text = :text, updated_at = '$timestamp'
                         WHERE id = :id AND deleted = 0
                     ");
                     $data['id'] = $id;
@@ -276,7 +280,7 @@ switch ($action) {
         if (isset($_GET['id'])) {
             $stmt = $pdo->prepare("
                 UPDATE record 
-                SET deleted = 1, updated_at = CURRENT_TIMESTAMP 
+                SET deleted = 1, updated_at = '$timestamp'
                 WHERE id = :id
             ");
             $stmt->execute([':id' => $_GET['id']]);
