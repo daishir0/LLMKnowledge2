@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# **cronでタスク登録をする場合**
+# `crontab -e`で以下のようにタスクを登録します。（以下は毎分起動の場合）
+# * * * * * /bin/bash /var/www/html/LLMKnowledge2/common/run_task2knowledge.sh
+
+# もしanaconda等でPythonの環境を構築している場合には、以下のように環境を指定すること
+# source /home/ec2-user/anaconda3/bin/activate base  # 'base'は使用している環境名
+
 # スクリプトの絶対パス、必要に応じて変えること
 SCRIPT_PATH="/var/www/html/LLMKnowledge2/common/task2knowledge.py"
 LOCK_FILE="/tmp/task2knowledge.lock"
