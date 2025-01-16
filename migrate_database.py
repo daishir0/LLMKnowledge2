@@ -6,7 +6,7 @@
 
 主な機能：
 - 既存のテーブル（knowledge, record）のバックアップ作成
-- 新しいテーブル構造の作成（users, prompts, knowledge, record, 履歴テーブルなど）
+- 新しいテーブル構造の作成（prompts, knowledge, record, 履歴テーブルなど）
 - バックアップからデータの復元
 - 検索用インデックスの作成
 
@@ -55,18 +55,6 @@ def execute_migration(db_path):
 
         # 新しいテーブルの作成
         print("Creating new tables...")
-        
-        # ユーザーテーブル
-        cursor.execute("""
-        CREATE TABLE users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            deleted INTEGER DEFAULT 0
-        );
-        """)
 
         # プロンプトテーブル
         cursor.execute("""
@@ -78,8 +66,7 @@ def execute_migration(db_path):
             created_by INTEGER,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            deleted INTEGER DEFAULT 0,
-            FOREIGN KEY (created_by) REFERENCES users(id)
+            deleted INTEGER DEFAULT 0
         );
         """)
 
@@ -92,8 +79,7 @@ def execute_migration(db_path):
             content TEXT NOT NULL,
             modified_by INTEGER,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (prompt_id) REFERENCES prompts(id),
-            FOREIGN KEY (modified_by) REFERENCES users(id)
+            FOREIGN KEY (prompt_id) REFERENCES prompts(id)
         );
         """)
 
@@ -106,8 +92,7 @@ def execute_migration(db_path):
             created_by INTEGER,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            deleted INTEGER DEFAULT 0,
-            FOREIGN KEY (created_by) REFERENCES users(id)
+            deleted INTEGER DEFAULT 0
         );
         """)
 
@@ -120,8 +105,7 @@ def execute_migration(db_path):
             text TEXT NOT NULL,
             modified_by INTEGER,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (record_id) REFERENCES record(id),
-            FOREIGN KEY (modified_by) REFERENCES users(id)
+            FOREIGN KEY (record_id) REFERENCES record(id)
         );
         """)
 
@@ -140,8 +124,7 @@ def execute_migration(db_path):
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             deleted INTEGER DEFAULT 0,
-            FOREIGN KEY (prompt_id) REFERENCES prompts(id),
-            FOREIGN KEY (created_by) REFERENCES users(id)
+            FOREIGN KEY (prompt_id) REFERENCES prompts(id)
         );
         """)
 
@@ -156,8 +139,7 @@ def execute_migration(db_path):
             reference TEXT,
             modified_by INTEGER,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (knowledge_id) REFERENCES knowledge(id),
-            FOREIGN KEY (modified_by) REFERENCES users(id)
+            FOREIGN KEY (knowledge_id) REFERENCES knowledge(id)
         );
         """)
 

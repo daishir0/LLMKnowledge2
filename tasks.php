@@ -21,12 +21,10 @@ switch ($action) {
                            WHEN t.source_type = 'knowledge' THEN k.title 
                        END as source_title,
                        p.title as prompt_title,
-                       u.username as created_by_name
                 FROM tasks t
                 LEFT JOIN record r ON t.source_type = 'record' AND t.source_id = r.id
                 LEFT JOIN knowledge k ON t.source_type = 'knowledge' AND t.source_id = k.id
                 LEFT JOIN prompts p ON t.prompt_content = p.content
-                LEFT JOIN users u ON t.created_by = u.id
                 WHERE t.deleted = 0 
                 AND (
                     r.title LIKE :search 
@@ -50,13 +48,11 @@ switch ($action) {
                            WHEN t.source_type = 'record' THEN r.title 
                            WHEN t.source_type = 'knowledge' THEN k.title 
                        END as source_title,
-                       p.title as prompt_title,
-                       u.username as created_by_name
+                       p.title as prompt_title
                 FROM tasks t
                 LEFT JOIN record r ON t.source_type = 'record' AND t.source_id = r.id
                 LEFT JOIN knowledge k ON t.source_type = 'knowledge' AND t.source_id = k.id
                 LEFT JOIN prompts p ON t.prompt_content = p.content
-                LEFT JOIN users u ON t.created_by = u.id
                 WHERE t.deleted = 0
                 ORDER BY t.created_at DESC 
                 LIMIT :limit OFFSET :offset
@@ -79,13 +75,11 @@ switch ($action) {
                        WHEN t.source_type = 'knowledge' THEN k.title 
                    END as source_title,
                    p.title as prompt_title,
-                   u.username as created_by_name,
                    rk.title as result_title
             FROM tasks t
             LEFT JOIN record r ON t.source_type = 'record' AND t.source_id = r.id
             LEFT JOIN knowledge k ON t.source_type = 'knowledge' AND t.source_id = k.id
             LEFT JOIN prompts p ON t.prompt_content = p.content
-            LEFT JOIN users u ON t.created_by = u.id
             LEFT JOIN knowledge rk ON t.result_knowledge_id = rk.id
             WHERE t.id = :id AND t.deleted = 0
         ");

@@ -49,9 +49,8 @@ switch ($action) {
         
         // 履歴データの取得
         $stmt = $pdo->prepare("
-            SELECT h.*, u.username as modified_by_user
+            SELECT h.*, h.modified_by as modified_by_user
             FROM prompt_history h
-            LEFT JOIN users u ON h.modified_by = u.id
             WHERE h.id = :history_id AND h.prompt_id = :prompt_id
         ");
         $stmt->execute([':history_id' => $history_id, ':prompt_id' => $id]);

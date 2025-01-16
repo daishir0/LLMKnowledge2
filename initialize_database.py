@@ -5,7 +5,7 @@
 新規に初期化するために使用されます。
 
 主な機能：
-- 新しいテーブル構造の作成（users, prompts, knowledge, record, tasks, 履歴テーブルなど）
+- 新しいテーブル構造の作成（prompts, knowledge, record, tasks, 履歴テーブルなど）
 - 検索用インデックスの作成
 
 使用方法：
@@ -40,18 +40,6 @@ def initialize_database(db_path):
         # トランザクション開始
         cursor.execute("BEGIN TRANSACTION;")
 
-        # ユーザーテーブル
-        cursor.execute("""
-        CREATE TABLE users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            deleted INTEGER DEFAULT 0
-        );
-        """)
-
         # プロンプトテーブル
         cursor.execute("""
         CREATE TABLE prompts (
@@ -62,8 +50,7 @@ def initialize_database(db_path):
             created_by INTEGER,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            deleted INTEGER DEFAULT 0,
-            FOREIGN KEY (created_by) REFERENCES users(id)
+            deleted INTEGER DEFAULT 0
         );
         """)
 
@@ -76,8 +63,7 @@ def initialize_database(db_path):
             content TEXT NOT NULL,
             modified_by INTEGER,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (prompt_id) REFERENCES prompts(id),
-            FOREIGN KEY (modified_by) REFERENCES users(id)
+            FOREIGN KEY (prompt_id) REFERENCES prompts(id)
         );
         """)
 
@@ -90,8 +76,7 @@ def initialize_database(db_path):
             created_by INTEGER,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            deleted INTEGER DEFAULT 0,
-            FOREIGN KEY (created_by) REFERENCES users(id)
+            deleted INTEGER DEFAULT 0
         );
         """)
 
@@ -104,8 +89,7 @@ def initialize_database(db_path):
             text TEXT NOT NULL,
             modified_by INTEGER,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (record_id) REFERENCES record(id),
-            FOREIGN KEY (modified_by) REFERENCES users(id)
+            FOREIGN KEY (record_id) REFERENCES record(id)
         );
         """)
 
@@ -124,8 +108,7 @@ def initialize_database(db_path):
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             deleted INTEGER DEFAULT 0,
-            FOREIGN KEY (prompt_id) REFERENCES prompts(id),
-            FOREIGN KEY (created_by) REFERENCES users(id)
+            FOREIGN KEY (prompt_id) REFERENCES prompts(id)
         );
         """)
 
@@ -140,8 +123,7 @@ def initialize_database(db_path):
             reference TEXT,
             modified_by INTEGER,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (knowledge_id) REFERENCES knowledge(id),
-            FOREIGN KEY (modified_by) REFERENCES users(id)
+            FOREIGN KEY (knowledge_id) REFERENCES knowledge(id)
         );
         """)
 
@@ -162,7 +144,6 @@ def initialize_database(db_path):
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             deleted INTEGER DEFAULT 0,
-            FOREIGN KEY (created_by) REFERENCES users(id),
             FOREIGN KEY (result_knowledge_id) REFERENCES knowledge(id)
         );
         """)

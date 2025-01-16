@@ -35,9 +35,8 @@ switch ($type) {
         ]);
 
         $stmt = $pdo->query("
-            SELECT r.*, u.username as created_by_name
+            SELECT r.*, r.created_by as created_by_name
             FROM record r
-            LEFT JOIN users u ON r.created_by = u.id
             WHERE r.deleted = 0
             ORDER BY r.id
         ");
@@ -71,9 +70,8 @@ switch ($type) {
         ]);
 
         $stmt = $pdo->query("
-            SELECT k.*, u.username as created_by_name
+            SELECT k.*, k.created_by as created_by_name
             FROM knowledge k
-            LEFT JOIN users u ON k.created_by = u.id
             WHERE k.deleted = 0
             ORDER BY k.id
         ");
@@ -111,9 +109,8 @@ switch ($type) {
         ]);
 
         $stmt = $pdo->prepare("
-            SELECT h.*, u.username as modified_by_name
+            SELECT h.*, h.modified_by as modified_by_name
             FROM {$target}_history h
-            LEFT JOIN users u ON h.modified_by = u.id
             ORDER BY h.{$target}_id, h.created_at
         ");
         $stmt->execute();
