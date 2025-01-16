@@ -6,17 +6,18 @@ error_reporting(E_ALL);
 
 // タイムゾーンを日本時間に設定
 date_default_timezone_set('Asia/Tokyo');
+$timestamp = date('Y-m-d H:i:s'); // JSTで現在時刻を取得
 
 // アプリケーションのベースURLを設定
 $base_url = '/LLMKnowledge2';  // Webルートからの相対パス
 define('BASE_URL', $base_url);
 
+// システム名を定義
+define('SYSTEM_NAME', 'LLMKnowledge2');
+
 $db_path = dirname(__DIR__) . '/knowledge.db';
 $pdo = new PDO("sqlite:$db_path");
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-// タイムゾーンをJSTに設定
-$pdo->exec("PRAGMA timezone = '+09:00'");
 
 // 認証設定
 $auth_config = [

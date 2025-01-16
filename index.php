@@ -38,7 +38,7 @@ if ($tasksTableExists) {
 
 <div class="row mb-4">
     <div class="col">
-        <h1>KnowledgeDB ダッシュボード</h1>
+        <h1><?= SYSTEM_NAME ?> ダッシュボード</h1>
         <p class="text-muted">ナレッジ管理システムへようこそ</p>
     </div>
 </div>
