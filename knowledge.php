@@ -319,12 +319,10 @@ switch ($action) {
                 <p><?= nl2br(h($knowledge['answer'])) ?></p>
             </div>
             
-            <?php if ($knowledge['reference']): ?>
             <div class="mb-3">
                 <h6>Reference</h6>
-                <p><a href="<?= h($knowledge['reference']) ?>" target="_blank"><?= h($knowledge['reference']) ?></a></p>
+                <p><?= !empty($knowledge['reference']) ? nl2br(h($knowledge['reference'])) : '（登録なし）' ?></p>
             </div>
-            <?php endif; ?>
             
             <!-- Knowledge化タスク作成フォーム -->
             <div class="mt-4 border-top pt-4">
@@ -574,7 +572,7 @@ switch ($action) {
         </div>
         
         <div class="mb-3">
-            <label for="reference" class="form-label">Reference (URL)</label>
+            <label for="reference" class="form-label">Reference</label>
             <input type="url" class="form-control" id="reference" name="reference" 
                    value="<?= isset($knowledge) ? h($knowledge['reference']) : '' ?>">
         </div>

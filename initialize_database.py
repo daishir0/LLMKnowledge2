@@ -73,6 +73,7 @@ def initialize_database(db_path):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
             text TEXT NOT NULL,
+            reference TEXT,
             created_by TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -87,6 +88,7 @@ def initialize_database(db_path):
             record_id INTEGER,
             title TEXT NOT NULL,
             text TEXT NOT NULL,
+            reference TEXT,
             modified_by TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (record_id) REFERENCES record(id)

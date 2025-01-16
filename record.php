@@ -49,13 +49,14 @@ switch ($action) {
 
                 // recordテーブルに保存
                 $stmt = $pdo->prepare("
-                    INSERT INTO record (title, text, created_by, created_at, updated_at)
-                    VALUES (:title, :text, :created_by, '$timestamp', '$timestamp')
+                    INSERT INTO record (title, text, reference, created_by, created_at, updated_at)
+                    VALUES (:title, :text, :reference, :created_by, '$timestamp', '$timestamp')
                 ");
                 
                 $data = [
                     'title' => $_FILES['file']['name'],
                     'text' => $result['markdown'],
+                    'reference' => $_POST['reference'] ?? '',
                     'created_by' => $_SESSION['user']
                 ];
                 
@@ -68,7 +69,8 @@ switch ($action) {
                     // 履歴の記録
                     $historyData = [
                         'title' => $data['title'],
-                        'text' => $data['text']
+                        'text' => $data['text'],
+                        'reference' => $data['reference']
                     ];
                     logHistory($pdo, 'record', $id, $historyData);
 
@@ -227,36 +229,39 @@ switch ($action) {
 
                 if ($action === 'create') {
                     $stmt = $pdo->prepare("
-                        INSERT INTO record (title, text, created_by, created_at, updated_at)
-                        VALUES (:title, :text, :created_by, '$timestamp', '$timestamp')
+                        INSERT INTO record (title, text, reference, created_by, created_at, updated_at)
+                        VALUES (:title, :text, :reference, :created_by, '$timestamp', '$timestamp')
                     ");
-                    $data['created_by'] = $_SESSION['user'];
-                    $stmt->execute($data);
-                    $id = $pdo->lastInsertId();
-
-                    // 新規作成時も履歴を記録
-                    $historyData = [
-                        'title' => $data['title'],
-                        'text' => $data['text']
+                    $data = [
+                        'title' => $_POST['title'],
+                        'text' => $_POST['text'],
+                        'reference' => $_POST['reference'],
+                        'created_by' => $_SESSION['user']
                     ];
-                    logHistory($pdo, 'record', $id, $historyData);
                 } else {
                     $id = $_GET['id'];
                     $stmt = $pdo->prepare("
                         UPDATE record 
-                        SET title = :title, text = :text, updated_at = '$timestamp'
+                        SET title = :title, text = :text, reference = :reference, updated_at = '$timestamp'
                         WHERE id = :id AND deleted = 0
                     ");
-                    $data['id'] = $id;
-                    $stmt->execute($data);
-                    
-                    // 履歴の記録
-                    $historyData = [
-                        'title' => $data['title'],
-                        'text' => $data['text']
+                    $data = [
+                        'title' => $_POST['title'],
+                        'text' => $_POST['text'],
+                        'reference' => $_POST['reference'],
+                        'id' => $id
                     ];
-                    logHistory($pdo, 'record', $id, $historyData);
                 }
+
+                $stmt->execute($data);
+                
+                // 履歴の記録
+                $historyData = [
+                    'title' => $data['title'],
+                    'text' => $data['text'],
+                    'reference' => $data['reference']
+                ];
+                logHistory($pdo, 'record', $id, $historyData);
 
                 $pdo->commit();
             } catch (Exception $e) {
@@ -340,6 +345,10 @@ switch ($action) {
                                 <label for="file" class="form-label">ファイル選択</label>
                                 <input type="file" class="form-control" id="file" name="file" required>
                             </div>
+                            <div class="mb-3">
+                                <label for="upload_reference" class="form-label">Reference</label>
+                                <input type="text" class="form-control" id="upload_reference" name="reference">
+                            </div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
@@ -414,6 +423,8 @@ switch ($action) {
         <div class="card-body">
             <h5 class="card-title"><?= h($record['title']) ?></h5>
             <p class="card-text"><?= nl2br(h($record['text'])) ?></p>
+            <h6 class="mt-4">Reference</h6>
+            <p class="card-text"><?= !empty($record['reference']) ? nl2br(h($record['reference'])) : '（登録なし）' ?></p>
             
             <!-- Knowledge化タスク作成フォーム -->
             <div class="mt-4 border-top pt-4">
@@ -614,6 +625,12 @@ switch ($action) {
         <div class="mb-3">
             <label for="text" class="form-label">内容</label>
             <textarea class="form-control" id="text" name="text" rows="10" required><?= isset($record) ? h($record['text']) : '' ?></textarea>
+        </div>
+        
+        <div class="mb-3">
+            <label for="reference" class="form-label">Reference</label>
+            <input type="text" class="form-control" id="reference" name="reference" 
+                   value="<?= isset($record) ? h($record['reference']) : '' ?>">
         </div>
         
         <button type="submit" class="btn btn-primary">保存</button>
