@@ -89,17 +89,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         case 'create_record':
             $title = $_POST['title'] ?? '';
             $text = $_POST['text'] ?? '';
+            $reference = $_POST['reference'] ?? '';
 
             if ($title && $text) {
                 try {
                     $stmt = $pdo->prepare("
-                        INSERT INTO record (title, text, created_at, updated_at)
-                        VALUES (:title, :text, '$timestamp', '$timestamp')
+                        INSERT INTO record (title, text, reference, created_at, updated_at)
+                        VALUES (:title, :text, :reference, '$timestamp', '$timestamp')
                     ");
                     
                     $stmt->execute([
                         ':title' => $title,
-                        ':text' => $text
+                        ':text' => $text,
+                        ':reference' => $reference
                     ]);
 
                     header('Content-Type: application/json');
