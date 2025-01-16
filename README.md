@@ -49,17 +49,10 @@ chmod 666 knowledge.db
 - Point the web server to the project directory
 - Add security rules to prevent direct access to knowledge.db
   ```apache
-  # For Apache (.htaccess)
-  <Files "knowledge.db">
-    Order allow,deny
-    Deny from all
-  </Files>
-  ```
-  ```nginx
-  # For Nginx
-  location ~ \.db$ {
-    deny all;
-  }
+  # For Apache (httpd.conf)
+  <FilesMatch "\.db$">
+    Require all denied
+  </FilesMatch>
   ```
 
 ## Usage
@@ -140,17 +133,10 @@ chmod 666 knowledge.db
 - プロジェクトディレクトリにWebサーバーを向ける
 - knowledge.dbへの直接アクセスを防ぐためのセキュリティルールを追加
   ```apache
-  # Apache用 (.htaccess)
-  <Files "knowledge.db">
-    Order allow,deny
-    Deny from all
-  </Files>
-  ```
-  ```nginx
-  # Nginx用
-  location ~ \.db$ {
-    deny all;
-  }
+  # For Apache (httpd.conf)
+  <FilesMatch "\.db$">
+    Require all denied
+  </FilesMatch>
   ```
 
 ## 使い方
