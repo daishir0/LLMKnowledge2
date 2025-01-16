@@ -7,7 +7,7 @@
 # もしanaconda等でPythonの環境を構築している場合には、以下のように環境を指定すること
 # source /home/ec2-user/anaconda3/bin/activate base  # 'base'は使用している環境名
 
-# スクリプトの絶対パス、必要に応じて変えること
+# スクリプトの絶対パスと、ロックファイル。初期設定時に変えること(TODO)
 SCRIPT_PATH="/var/www/html/LLMKnowledge2/common/task2knowledge.py"
 LOCK_FILE="/tmp/task2knowledge.lock"
 
