@@ -37,7 +37,7 @@ $api_config = [
         'base_url' => 'https://api.anthropic.com/v1',
     ],
     'markitdown' => [
-        'api_key' => '', // MarkItDownServerの APIキーを設定してください
+        'api_key' => '', // MarkItDownServerの APIキーを設定してください see https://github.com/daishir0/MarkItDownServer
         'base_url' => 'https://mark-it-down-server.url',
     ],
 ];
