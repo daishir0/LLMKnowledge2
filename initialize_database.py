@@ -47,7 +47,7 @@ def initialize_database(db_path):
             title TEXT NOT NULL,
             content TEXT NOT NULL,
             category TEXT NOT NULL,
-            created_by INTEGER,
+            created_by TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             deleted INTEGER DEFAULT 0
@@ -61,7 +61,7 @@ def initialize_database(db_path):
             prompt_id INTEGER,
             title TEXT NOT NULL,
             content TEXT NOT NULL,
-            modified_by INTEGER,
+            modified_by TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (prompt_id) REFERENCES prompts(id)
         );
@@ -73,7 +73,7 @@ def initialize_database(db_path):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT NOT NULL,
             text TEXT NOT NULL,
-            created_by INTEGER,
+            created_by TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             deleted INTEGER DEFAULT 0
@@ -87,7 +87,7 @@ def initialize_database(db_path):
             record_id INTEGER,
             title TEXT NOT NULL,
             text TEXT NOT NULL,
-            modified_by INTEGER,
+            modified_by TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (record_id) REFERENCES record(id)
         );
@@ -104,7 +104,7 @@ def initialize_database(db_path):
             parent_id INTEGER,
             parent_type TEXT,
             prompt_id INTEGER,
-            created_by INTEGER,
+            created_by TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             deleted INTEGER DEFAULT 0,
@@ -121,7 +121,7 @@ def initialize_database(db_path):
             question TEXT NOT NULL,
             answer TEXT NOT NULL,
             reference TEXT,
-            modified_by INTEGER,
+            modified_by TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (knowledge_id) REFERENCES knowledge(id)
         );
@@ -140,7 +140,7 @@ def initialize_database(db_path):
             scheduled_at DATETIME,
             error_message TEXT,
             result_knowledge_id INTEGER,
-            created_by INTEGER,
+            created_by TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             deleted INTEGER DEFAULT 0,
