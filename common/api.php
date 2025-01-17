@@ -23,9 +23,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                 // ソースタイプに応じてソーステキストを取得
                 if ($sourceType === 'record') {
-                    $stmt = $pdo->prepare("SELECT text FROM record WHERE id = :id AND deleted = 0");
+                    $stmt = $pdo->prepare("SELECT text, reference FROM record WHERE id = :id AND deleted = 0");
                 } elseif ($sourceType === 'knowledge') {
-                    $stmt = $pdo->prepare("SELECT answer as text FROM knowledge WHERE id = :id AND deleted = 0");
+                    $stmt = $pdo->prepare("SELECT answer as text, reference FROM knowledge WHERE id = :id AND deleted = 0");
                 } else {
                     header('Content-Type: application/json');
                     echo json_encode(['success' => false, 'message' => '不正なソースタイプです。']);
@@ -38,12 +38,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     try {
                         $pdo->beginTransaction();
 
+                        // プロンプト内容を取得
+                        $promptContent = $prompt['content'];
+                        
+                        // referenceが存在する場合、プロンプト内の{{reference}}を置換
+                        if (!empty($source['reference'])) {
+                            $promptContent = str_replace('{{reference}}', $source['reference'], $promptContent);
+                        }
+
                         $stmt = $pdo->prepare("
                             INSERT INTO tasks (
                                 source_type,
                                 source_id,
                                 source_text,
                                 prompt_content,
+                                prompt_id,
                                 created_by,
                                 created_at,
                                 updated_at,
@@ -53,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 :source_id,
                                 :source_text,
                                 :prompt_content,
+                                :prompt_id,
                                 :created_by,
                                 '$timestamp',
                                 '$timestamp',
@@ -64,7 +74,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             ':source_type' => $sourceType,
                             ':source_id' => $sourceId,
                             ':source_text' => $source['text'],
-                            ':prompt_content' => $prompt['content'],
+                            ':prompt_content' => $promptContent,  // 置換後のプロンプト内容を使用
+                            ':prompt_id' => $promptId,
                             ':created_by' => $_SESSION['user']
                         ]);
 
