@@ -137,6 +137,7 @@ def initialize_database(db_path):
             source_id INTEGER NOT NULL,
             source_text TEXT NOT NULL,
             prompt_content TEXT NOT NULL,
+            prompt_id INTEGER,
             status TEXT NOT NULL DEFAULT 'pending',
             priority INTEGER DEFAULT 0,
             scheduled_at DATETIME,

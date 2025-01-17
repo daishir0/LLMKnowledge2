@@ -52,7 +52,7 @@ switch ($action) {
                 FROM tasks t
                 LEFT JOIN record r ON t.source_type = 'record' AND t.source_id = r.id
                 LEFT JOIN knowledge k ON t.source_type = 'knowledge' AND t.source_id = k.id
-                LEFT JOIN prompts p ON t.prompt_content = p.content
+                LEFT JOIN prompts p ON t.prompt_id = p.id
                 WHERE t.deleted = 0
                 ORDER BY t.created_at DESC 
                 LIMIT :limit OFFSET :offset
@@ -79,7 +79,7 @@ switch ($action) {
             FROM tasks t
             LEFT JOIN record r ON t.source_type = 'record' AND t.source_id = r.id
             LEFT JOIN knowledge k ON t.source_type = 'knowledge' AND t.source_id = k.id
-            LEFT JOIN prompts p ON t.prompt_content = p.content
+            LEFT JOIN prompts p ON t.prompt_id = p.id
             LEFT JOIN knowledge rk ON t.result_knowledge_id = rk.id
             WHERE t.id = :id AND t.deleted = 0
         ");

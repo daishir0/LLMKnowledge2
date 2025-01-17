@@ -437,6 +437,7 @@ switch ($action) {
         <div class="mb-3">
             <label for="content" class="form-label">プロンプト内容</label>
             <textarea class="form-control" id="content" name="content" rows="10" required><?= isset($prompt) ? h($prompt['content']) : '' ?></textarea>
+            ※{{reference}}は、referenceに登録された値にリプレースされます。
         </div>
         
         <button type="submit" class="btn btn-primary">保存</button>
