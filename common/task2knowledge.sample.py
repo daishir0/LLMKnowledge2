@@ -198,9 +198,9 @@ def main():
         debug_print("Fetching pending/processing task")
         # pendingまたはprocessingのタスクを1件取得（プロンプトIDも含める）
         cursor.execute("""
-            SELECT t.id, t.source_type, t.source_id, t.prompt_content, t.source_text, p.id as prompt_id, t.status
+            SELECT t.id, t.source_type, t.source_id, t.prompt_content, t.source_text, t.prompt_id as prompt_id, t.status
             FROM tasks t
-            LEFT JOIN prompts p ON p.content = t.prompt_content AND p.deleted = 0
+            -- LEFT JOIN prompts p ON p.content = t.prompt_content AND p.deleted = 0
             WHERE t.status IN ('pending', 'processing')
             ORDER BY
                 CASE t.status
@@ -271,14 +271,14 @@ def main():
             print(answer)
             print("=============================")
 
-            debug_print("Fetching source title")
-            # ソースタイプに応じてタイトルを取得
+            debug_print("Fetching source reference")
+            # ソースタイプに応じてreferenceを取得
             if source_type == 'record':
-                cursor.execute("SELECT title FROM record WHERE id = ?", (source_id,))
+                cursor.execute("SELECT title, reference FROM record WHERE id = ?", (source_id,))
                 parent_type = 'record'
                 question = "(プレーンナレッジからの作成)"
             elif source_type == 'knowledge':
-                cursor.execute("SELECT title FROM knowledge WHERE id = ?", (source_id,))
+                cursor.execute("SELECT title, reference FROM knowledge WHERE id = ?", (source_id,))
                 parent_type = 'knowledge'
                 question = "(ナレッジからの作成)"
             else:
@@ -289,12 +289,14 @@ def main():
             if not record:
                 debug_print(f"Source not found for ID: {source_id}")
                 raise Exception(f"Source not found for ID: {source_id}")
-            
+
+            # (TBD)title, referenceについては、タスク登録した後にrecordを編集した場合は、実行時の想定から変更されてしまうが、軽微と考えてTBD。
             title = record[0]
+            reference = record[1] or ""  # referenceがNULLの場合は空文字列を使用
             current_time = datetime.datetime.now()
 
             debug_print("Inserting knowledge")
-            # knowledgeテーブルにデータを挿入
+            # knowledgeテーブルにデータを挿入（referenceも含める）
             cursor.execute("""
                 INSERT INTO knowledge (
                     title,
@@ -313,7 +315,7 @@ def main():
                 title,                          # タイトル（ソースから）
                 question,                       # 質問（ソースタイプに応じて変更）
                 answer,                         # 回答（AI応答）
-                "",                            # 参照情報（空文字列）
+                reference,                      # 参照情報（ソースから）
                 source_id,                      # 親ID
                 parent_type,                    # 親タイプ（動的）
                 prompt_id,                      # プロンプトID
