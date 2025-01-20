@@ -40,6 +40,18 @@ def initialize_database(db_path):
         # トランザクション開始
         cursor.execute("BEGIN TRANSACTION;")
 
+        # グループテーブル
+        cursor.execute("""
+        CREATE TABLE groups (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            detail TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            deleted INTEGER DEFAULT 0
+        );
+        """)
+
         # プロンプトテーブル
         cursor.execute("""
         CREATE TABLE prompts (
@@ -74,6 +86,7 @@ def initialize_database(db_path):
             title TEXT NOT NULL,
             text TEXT NOT NULL,
             reference TEXT,
+            group_id INTEGER DEFAULT NULL REFERENCES groups(id),
             created_by TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -106,6 +119,7 @@ def initialize_database(db_path):
             parent_id INTEGER,
             parent_type TEXT,
             prompt_id INTEGER,
+            group_id INTEGER DEFAULT NULL REFERENCES groups(id),
             created_by TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -143,6 +157,7 @@ def initialize_database(db_path):
             scheduled_at DATETIME,
             error_message TEXT,
             result_knowledge_id INTEGER,
+            group_id INTEGER DEFAULT NULL REFERENCES groups(id),
             created_by TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,

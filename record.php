@@ -94,29 +94,48 @@ switch ($action) {
         break;
 
     case 'list':
-        // 検索処理
-        if ($searchTerm) {
-            $records = search($pdo, 'record', $searchTerm, ['title', 'text']);
-            $total = count($records);
-        } else {
-            // 通常のリスト表示
-            $stmt = $pdo->prepare("
-                SELECT COUNT(*) FROM record WHERE deleted = 0
-            ");
-            $stmt->execute();
-            $total = $stmt->fetchColumn();
-            
-            $stmt = $pdo->prepare("
-                SELECT * FROM record 
-                WHERE deleted = 0
-                ORDER BY created_at DESC 
-                LIMIT :limit OFFSET :offset
-            ");
-            $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
-            $stmt->bindValue(':offset', ($page - 1) * $perPage, PDO::PARAM_INT);
-            $stmt->execute();
-            $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $groupId = $_GET['group_id'] ?? '';
+        $params = [];
+        $whereConditions = ['deleted = 0'];
+        
+        // グループ条件の追加
+        if ($groupId === '') {
+            $whereConditions[] = 'group_id IS NULL';
+        } elseif ($groupId !== '') {
+            $whereConditions[] = 'group_id = :group_id';
+            $params[':group_id'] = $groupId;
         }
+
+        // 検索条件の追加
+        if ($searchTerm) {
+            $whereConditions[] = '(title LIKE :search_title OR text LIKE :search_text)';
+            $params[':search_title'] = "%$searchTerm%";
+            $params[':search_text'] = "%$searchTerm%";
+        }
+
+        // WHERE句の構築
+        $whereClause = implode(' AND ', $whereConditions);
+
+        // 総件数の取得
+        $countSql = "SELECT COUNT(*) FROM record WHERE $whereClause";
+        $stmt = $pdo->prepare($countSql);
+        $stmt->execute($params);
+        $total = $stmt->fetchColumn();
+
+        // レコードの取得
+        $sql = "SELECT * FROM record
+                WHERE $whereClause
+                ORDER BY created_at DESC
+                LIMIT :limit OFFSET :offset";
+        
+        $stmt = $pdo->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', ($page - 1) * $perPage, PDO::PARAM_INT);
+        $stmt->execute();
+        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         $pagination = getPagination($total, $perPage, $page);
         break;
@@ -124,7 +143,7 @@ switch ($action) {
     case 'view':
         $id = $_GET['id'] ?? 0;
         $stmt = $pdo->prepare("
-            SELECT r.*, k.id as knowledge_id, k.title as knowledge_title
+            SELECT r.*, k.id as knowledge_id, k.title as knowledge_title, r.group_id
             FROM record r
             LEFT JOIN knowledge k ON k.parent_id = r.id AND k.parent_type = 'record' AND k.deleted = 0
             WHERE r.id = :id AND r.deleted = 0
@@ -239,8 +258,25 @@ switch ($action) {
         <div class="col">
             <form class="d-flex" method="GET" action="record.php">
                 <input type="hidden" name="action" value="list">
-                <input type="search" name="search" class="form-control me-2" 
+                <input type="search" name="search" class="form-control me-2"
                        value="<?= h($searchTerm) ?>" placeholder="検索...">
+                <select name="group_id" class="form-select me-2" style="width: auto;">
+                    <option value="">グループ指定なし</option>
+                    <?php
+                    $groupStmt = $pdo->query("
+                        SELECT id, name
+                        FROM groups
+                        WHERE deleted = 0
+                        ORDER BY name
+                    ");
+                    while ($group = $groupStmt->fetch(PDO::FETCH_ASSOC)):
+                    ?>
+                        <option value="<?= h($group['id']) ?>"
+                                <?= (isset($_GET['group_id']) && $_GET['group_id'] == $group['id']) ? 'selected' : '' ?>>
+                            <?= h($group['id']) ?>: <?= h($group['name']) ?>
+                        </option>
+                    <?php endwhile; ?>
+                </select>
                 <button class="btn btn-outline-primary" type="submit">検索</button>
             </form>
         </div>
@@ -319,7 +355,7 @@ switch ($action) {
         <ul class="pagination justify-content-center">
             <?php for ($i = $pagination['start']; $i <= $pagination['end']; $i++): ?>
             <li class="page-item <?= $i === $page ? 'active' : '' ?>">
-                <a class="page-link" href="record.php?action=list&page=<?= $i ?><?= $searchTerm ? '&search=' . h($searchTerm) : '' ?>">
+                <a class="page-link" href="record.php?action=list&page=<?= $i ?><?= $searchTerm ? '&search=' . h($searchTerm) : '' ?><?= isset($_GET['group_id']) && $_GET['group_id'] !== '' ? '&group_id=' . h($_GET['group_id']) : '' ?>">
                     <?= $i ?>
                 </a>
             </li>
@@ -353,6 +389,7 @@ switch ($action) {
                     <input type="hidden" name="action" value="create_task">
                     <input type="hidden" name="source_type" value="record">
                     <input type="hidden" name="source_id" value="<?= h($record['id']) ?>">
+                    <input type="hidden" name="group_id" value="<?= h($record['group_id']) ?>">
                     <div class="mb-3">
                         <label for="prompt_id" class="form-label">使用プロンプト</label>
                         <select class="form-control" id="prompt_id" name="prompt_id" required>

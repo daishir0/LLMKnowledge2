@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                 // ソースタイプに応じてソーステキストを取得
                 if ($sourceType === 'record') {
-                    $stmt = $pdo->prepare("SELECT text, reference FROM record WHERE id = :id AND deleted = 0");
+                    $stmt = $pdo->prepare("SELECT text, reference, group_id FROM record WHERE id = :id AND deleted = 0");
                 } elseif ($sourceType === 'knowledge') {
                     $stmt = $pdo->prepare("SELECT answer as text, reference FROM knowledge WHERE id = :id AND deleted = 0");
                 } else {
@@ -53,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 source_text,
                                 prompt_content,
                                 prompt_id,
+                                group_id,
                                 created_by,
                                 created_at,
                                 updated_at,
@@ -63,6 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 :source_text,
                                 :prompt_content,
                                 :prompt_id,
+                                :group_id,
                                 :created_by,
                                 '$timestamp',
                                 '$timestamp',
@@ -76,6 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             ':source_text' => $source['text'],
                             ':prompt_content' => $promptContent,  // 置換後のプロンプト内容を使用
                             ':prompt_id' => $promptId,
+                            ':group_id' => $source['group_id'],
                             ':created_by' => $_SESSION['user']
                         ]);
 
@@ -130,6 +133,114 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             } else {
                 header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => 'タイトルと内容が必要です。']);
+            }
+            break;
+
+        case 'delete_records':
+            if (!isset($_SESSION['user'])) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'ログインが必要です。']);
+                exit;
+            }
+
+            if (!isset($_POST['record_ids']) || !is_array($_POST['record_ids'])) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => '削除対象が指定されていません。']);
+                exit;
+            }
+
+            try {
+                $pdo->beginTransaction();
+                
+                $stmt = $pdo->prepare("
+                    UPDATE record
+                    SET deleted = 1,
+                        updated_at = '$timestamp'
+                    WHERE id = :id
+                    AND deleted = 0
+                ");
+
+                foreach ($_POST['record_ids'] as $id) {
+                    $stmt->execute([':id' => $id]);
+                }
+
+                $pdo->commit();
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true, 'message' => 'プレーンナレッジを削除しました。']);
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'データベースエラー: ' . $e->getMessage()]);
+            }
+            break;
+
+        case 'add_records':
+            if (!isset($_SESSION['user'])) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'ログインが必要です。']);
+                exit;
+            }
+
+            if (!isset($_POST['group_id']) || !isset($_POST['newdata'])) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => '必要なデータが不足しています。']);
+                exit;
+            }
+
+            try {
+                $pdo->beginTransaction();
+                
+                $stmt = $pdo->prepare("
+                    INSERT INTO record (
+                        title,
+                        text,
+                        reference,
+                        group_id,
+                        created_by,
+                        created_at,
+                        updated_at
+                    ) VALUES (
+                        :title,
+                        :text,
+                        :reference,
+                        :group_id,
+                        :created_by,
+                        '$timestamp',
+                        '$timestamp'
+                    )
+                ");
+
+                $newRecords = explode("\n", trim($_POST['newdata']));
+                $successCount = 0;
+
+                foreach ($newRecords as $newdata) {
+                    $newdata = trim($newdata);
+                    if (empty($newdata)) continue;
+
+                    // カンマが含まれる場合は、カンマまでを参照情報とする
+                    $commaPos = strpos($newdata, ',');
+                    $reference = $commaPos !== false ? substr($newdata, 0, $commaPos) : $newdata;
+
+                    $stmt->execute([
+                        ':title' => $newdata,
+                        ':text' => '',
+                        ':reference' => $reference,
+                        ':group_id' => $_POST['group_id'],
+                        ':created_by' => $_SESSION['user']
+                    ]);
+                    $successCount++;
+                }
+
+                $pdo->commit();
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => true,
+                    'message' => $successCount . '件のプレーンナレッジを追加しました。'
+                ]);
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'データベースエラー: ' . $e->getMessage()]);
             }
             break;
 

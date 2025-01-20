@@ -198,7 +198,7 @@ def main():
         debug_print("Fetching pending/processing task")
         # pendingまたはprocessingのタスクを1件取得（プロンプトIDも含める）
         cursor.execute("""
-            SELECT t.id, t.source_type, t.source_id, t.prompt_content, t.source_text, t.prompt_id as prompt_id, t.status
+            SELECT t.id, t.source_type, t.source_id, t.prompt_content, t.source_text, t.prompt_id as prompt_id, t.status, t.group_id
             FROM tasks t
             -- LEFT JOIN prompts p ON p.content = t.prompt_content AND p.deleted = 0
             WHERE t.status IN ('pending', 'processing')
@@ -213,7 +213,7 @@ def main():
         task = cursor.fetchone()
 
         if task:
-            task_id, source_type, source_id, prompt_content, source_text, prompt_id, current_status = task
+            task_id, source_type, source_id, prompt_content, source_text, prompt_id, current_status, group_id = task
             print(f"Processing task ID: {task_id}")
             print(f"Source Type: {source_type}")
             print(f"Current Status: {current_status}")
@@ -306,11 +306,12 @@ def main():
                     parent_id,
                     parent_type,
                     prompt_id,
+                    group_id,
                     created_by,
                     created_at,
                     updated_at,
                     deleted
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'admin', ?, ?, 0)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'admin', ?, ?, 0)
             """, (
                 title,                          # タイトル（ソースから）
                 question,                       # 質問（ソースタイプに応じて変更）
@@ -319,6 +320,7 @@ def main():
                 source_id,                      # 親ID
                 parent_type,                    # 親タイプ（動的）
                 prompt_id,                      # プロンプトID
+                group_id,                       # グループID（タスクから）
                 current_time,                   # 作成日時
                 current_time                    # 更新日時
             ))
