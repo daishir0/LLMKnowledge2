@@ -98,6 +98,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             break;
 
         case 'create_record':
+            if (!isset($_SESSION['user'])) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'ログインが必要です。']);
+                exit;
+            }
+
             $title = $_POST['title'] ?? '';
             $text = $_POST['text'] ?? '';
             $reference = $_POST['reference'] ?? '';
