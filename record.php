@@ -143,9 +143,11 @@ switch ($action) {
     case 'view':
         $id = $_GET['id'] ?? 0;
         $stmt = $pdo->prepare("
-            SELECT r.*, k.id as knowledge_id, k.title as knowledge_title, r.group_id
+            SELECT r.*, k.id as knowledge_id, k.title as knowledge_title, r.group_id,
+                   g.id as group_id, g.name as group_name
             FROM record r
             LEFT JOIN knowledge k ON k.parent_id = r.id AND k.parent_type = 'record' AND k.deleted = 0
+            LEFT JOIN groups g ON r.group_id = g.id AND g.deleted = 0
             WHERE r.id = :id AND r.deleted = 0
         ");
         $stmt->execute([':id' => $id]);
@@ -168,26 +170,28 @@ switch ($action) {
 
                 if ($action === 'create') {
                     $stmt = $pdo->prepare("
-                        INSERT INTO record (title, text, reference, created_by, created_at, updated_at)
-                        VALUES (:title, :text, :reference, :created_by, '$timestamp', '$timestamp')
+                        INSERT INTO record (title, text, reference, group_id, created_by, created_at, updated_at)
+                        VALUES (:title, :text, :reference, :group_id, :created_by, '$timestamp', '$timestamp')
                     ");
                     $data = [
                         'title' => $_POST['title'],
                         'text' => $_POST['text'],
                         'reference' => $_POST['reference'],
+                        'group_id' => !empty($_POST['group_id']) ? $_POST['group_id'] : null,
                         'created_by' => $_SESSION['user']
                     ];
                 } else {
                     $id = $_GET['id'];
                     $stmt = $pdo->prepare("
-                        UPDATE record 
-                        SET title = :title, text = :text, reference = :reference, updated_at = '$timestamp'
+                        UPDATE record
+                        SET title = :title, text = :text, reference = :reference, group_id = :group_id, updated_at = '$timestamp'
                         WHERE id = :id AND deleted = 0
                     ");
                     $data = [
                         'title' => $_POST['title'],
                         'text' => $_POST['text'],
                         'reference' => $_POST['reference'],
+                        'group_id' => !empty($_POST['group_id']) ? $_POST['group_id'] : null,
                         'id' => $id
                     ];
                 }
@@ -379,6 +383,14 @@ switch ($action) {
         <div class="card-body">
             <h5 class="card-title"><?= h($record['title']) ?></h5>
             <p class="card-text"><?= nl2br(h($record['text'])) ?></p>
+            <h6 class="mt-4">グループ</h6>
+            <p class="card-text">
+                <?php if ($record['group_id']): ?>
+                    <?= h($record['group_id']) ?>: <?= h($record['group_name']) ?>
+                <?php else: ?>
+                    （グループ無し）
+                <?php endif; ?>
+            </p>
             <h6 class="mt-4">Reference</h6>
             <p class="card-text"><?= !empty($record['reference']) ? nl2br(h($record['reference'])) : '（登録なし）' ?></p>
             
@@ -585,9 +597,30 @@ switch ($action) {
         </div>
         
         <div class="mb-3">
+            <label for="group_id" class="form-label">グループ</label>
+            <select name="group_id" id="group_id" class="form-select">
+                <option value="">選択してください</option>
+                <?php
+                $groupStmt = $pdo->query("
+                    SELECT id, name
+                    FROM groups
+                    WHERE deleted = 0
+                    ORDER BY name
+                ");
+                while ($group = $groupStmt->fetch(PDO::FETCH_ASSOC)):
+                ?>
+                    <option value="<?= h($group['id']) ?>"
+                            <?= (isset($record) && $record['group_id'] == $group['id']) ? 'selected' : '' ?>>
+                        <?= h($group['name']) ?>
+                    </option>
+                <?php endwhile; ?>
+            </select>
+        </div>
+
+        <div class="mb-3">
             <label for="reference" class="form-label">Reference</label>
-            <input type="text" class="form-control" id="reference" name="reference" 
-                   value="<?= isset($record) ? h($record['reference']) : '' ?>">
+            <input type="text" class="form-control" id="reference" name="reference"
+                    value="<?= isset($record) ? h($record['reference']) : '' ?>">
         </div>
         
         <button type="submit" class="btn btn-primary">保存</button>

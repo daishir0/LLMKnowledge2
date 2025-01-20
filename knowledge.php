@@ -74,16 +74,18 @@ switch ($action) {
         $id = $_GET['id'] ?? 0;
         // ナレッジの詳細情報を取得
         $stmt = $pdo->prepare("
-            SELECT k.*, 
-                   CASE 
-                       WHEN k.parent_type = 'record' THEN r.title 
-                       WHEN k.parent_type = 'knowledge' THEN pk.title 
+            SELECT k.*,
+                   CASE
+                       WHEN k.parent_type = 'record' THEN r.title
+                       WHEN k.parent_type = 'knowledge' THEN pk.title
                    END as parent_title,
-                   p.title as prompt_title
+                   p.title as prompt_title,
+                   g.id as group_id, g.name as group_name
             FROM knowledge k
             LEFT JOIN record r ON k.parent_type = 'record' AND k.parent_id = r.id
             LEFT JOIN knowledge pk ON k.parent_type = 'knowledge' AND k.parent_id = pk.id
             LEFT JOIN prompts p ON k.prompt_id = p.id
+            LEFT JOIN groups g ON k.group_id = g.id AND g.deleted = 0
             WHERE k.id = :id AND k.deleted = 0
         ");
         $stmt->execute([':id' => $id]);
@@ -293,6 +295,14 @@ switch ($action) {
         </tbody>
     </table>
 
+    <?php if (isset($_GET['group_id']) && $_GET['group_id'] !== ''): ?>
+    <div class="text-center mb-4">
+        <button id="exportGroupButton" class="btn btn-success" data-group-id="<?= h($_GET['group_id']) ?>">
+            このグループのナレッジを全てエクスポートする
+        </button>
+    </div>
+    <?php endif; ?>
+
     <!-- ページネーション -->
     <?php if ($pagination['total_pages'] > 1): ?>
     <nav>
@@ -308,6 +318,41 @@ switch ($action) {
         </ul>
     </nav>
     <?php endif; ?>
+
+    <!-- JavaScriptをリスト画面でも読み込む -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        // グループエクスポート機能
+        $('#exportGroupButton').click(function(e) {
+            e.preventDefault();
+            const groupId = $(this).data('group-id');
+            
+            fetch(`common/export_group_knowledge.php?group_id=${groupId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.message || '不明なエラーが発生しました');
+                        });
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `group_${groupId}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    alert(error.message);
+                });
+        });
+    });
+    </script>
 
 <!-- 詳細表示画面 -->
 <?php elseif ($action === 'view'): ?>
@@ -333,7 +378,7 @@ switch ($action) {
                     <?php endif; ?>
                 </p>
             </div>
-            
+
             <div class="mb-3">
                 <h6>使用プロンプト</h6>
                 <p>
@@ -358,7 +403,18 @@ switch ($action) {
                 <h6>Answer</h6>
                 <p><?= nl2br(h($knowledge['answer'])) ?></p>
             </div>
-            
+
+            <div class="mb-3">
+                <h6>グループ</h6>
+                <p>
+                    <?php if ($knowledge['group_id']): ?>
+                        <?= h($knowledge['group_id']) ?>: <?= h($knowledge['group_name']) ?>
+                    <?php else: ?>
+                        （グループ無し）
+                    <?php endif; ?>
+                </p>
+            </div>
+
             <div class="mb-3">
                 <h6>Reference</h6>
                 <p><?= !empty($knowledge['reference']) ? nl2br(h($knowledge['reference'])) : '（登録なし）' ?></p>
@@ -518,7 +574,7 @@ switch ($action) {
             });
         });
 
-        // エクスポート機能の追加
+        // 個別ナレッジエクスポート機能
         $('#exportButton').click(function(e) {
             e.preventDefault();
             const knowledgeId = $(this).data('knowledge-id');

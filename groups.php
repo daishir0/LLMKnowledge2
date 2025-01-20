@@ -314,7 +314,7 @@ switch ($action) {
                                 <th><input type="checkbox" id="selectAll"></th>
                                 <th>ID</th>
                                 <th>タイトル</th>
-                                <th>参照情報</th>
+                                <th>Reference</th>
                                 <th>作成日時</th>
                             </tr>
                         </thead>
