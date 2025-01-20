@@ -351,7 +351,7 @@ switch ($action) {
             <form id="addRecordsForm">
                 <div class="form-group">
                     <textarea class="form-control" id="newRecords" name="newRecords" rows="10"
-                              placeholder="URLや共有フォルダのディレクトリを入力（1行に1つ）"></textarea>
+                              placeholder="URLや共有フォルダのファイルパスを入力（1行に1つ）"></textarea>
                 </div>
                 <button type="button" id="addRecords" class="btn btn-success mt-3">追加する</button>
             </form>
