@@ -65,22 +65,52 @@ function getHistory($pdo, $table, $id) {
 
 function logHistory($pdo, $table, $id, $data) {
     try {
-        // 必要なカラムのみを抽出（categoryは除外）
-        $validColumns = ['title', 'content'];
-        $filteredData = array_intersect_key($data, array_flip($validColumns));
-        
+        // テーブルごとの有効なカラムを定義
+        $validColumns = [
+            'record' => ['title', 'text', 'reference'],
+            'knowledge' => ['title', 'question', 'answer', 'reference'],
+            'prompts' => ['title', 'content']
+        ];
+
+        // 履歴テーブル名とIDカラム名のマッピング
+        $historyMap = [
+            'prompts' => ['table' => 'prompt', 'id_column' => 'prompt_id'],
+            'record' => ['table' => 'record', 'id_column' => 'record_id'],
+            'knowledge' => ['table' => 'knowledge', 'id_column' => 'knowledge_id']
+        ];
+
+        // テーブルの存在確認
+        if (!isset($validColumns[$table])) {
+            throw new Exception("Invalid table name: $table");
+        }
+
+        // 必要なカラムのみを抽出
+        $tableColumns = $validColumns[$table];
+        $filteredData = array_intersect_key($data, array_flip($tableColumns));
+
+        // 必須カラムの存在確認
+        foreach ($tableColumns as $column) {
+            if (!isset($filteredData[$column]) && !in_array($column, ['reference'])) {
+                throw new Exception("Missing required column: $column");
+            }
+        }
+
         // カラムとプレースホルダーを構築
         $columnNames = array_keys($filteredData);
         $columns = implode(', ', $columnNames);
         $placeholders = implode(', ', array_map(function($col) {
             return ":param_$col";
         }, $columnNames));
-        
+
+        // 履歴テーブル名とIDカラム名を取得
+        $historyTable = $historyMap[$table]['table'] . '_history';
+        $idColumn = $historyMap[$table]['id_column'];
+
         // SQLクエリを構築
-        $sql = "INSERT INTO {$table}_history
-                ({$table}_id, $columns, modified_by, created_at)
+        $sql = "INSERT INTO {$historyTable}
+                ({$idColumn}, $columns, modified_by, created_at)
                 VALUES (:table_id, $placeholders, :modified_by, datetime('now', 'localtime'))";
-        
+
         // パラメータを設定
         $params = [];
         foreach ($filteredData as $key => $value) {
@@ -88,29 +118,28 @@ function logHistory($pdo, $table, $id, $data) {
         }
         $params[':table_id'] = $id;
         $params[':modified_by'] = getCurrentUser();
-        
-        // デバッグ用にSQLとパラメータを出力
-        $log = date('Y-m-d H:i:s') . " Debug - SQL: " . $sql . "\n";
+
+        // デバッグログ
+        $log = date('Y-m-d H:i:s') . " Debug - Table: $table (History: $historyTable)\n";
+        $log .= date('Y-m-d H:i:s') . " Debug - SQL: " . $sql . "\n";
         $log .= date('Y-m-d H:i:s') . " Debug - Params: " . print_r($params, true) . "\n";
         file_put_contents(dirname(__FILE__) . '/logs.txt', $log, FILE_APPEND);
-        
+
         // クエリを実行
         $stmt = $pdo->prepare($sql);
         if (!$stmt) {
-            $error = date('Y-m-d H:i:s') . " Debug - Prepare Error: " . print_r($pdo->errorInfo(), true) . "\n";
-            file_put_contents(dirname(__FILE__) . '/logs.txt', $error, FILE_APPEND);
-            return false;
+            throw new Exception("Failed to prepare statement: " . print_r($pdo->errorInfo(), true));
         }
-        
-        $result = $stmt->execute($params);
-        if (!$result) {
-            $error = date('Y-m-d H:i:s') . " Debug - Execute Error: " . print_r($stmt->errorInfo(), true) . "\n";
-            file_put_contents(dirname(__FILE__) . '/logs.txt', $error, FILE_APPEND);
+
+        if (!$stmt->execute($params)) {
+            throw new Exception("Failed to execute statement: " . print_r($stmt->errorInfo(), true));
         }
-        return $result;
-    } catch (PDOException $e) {
-        $error = date('Y-m-d H:i:s') . " Debug - PDO Error: " . $e->getMessage() . "\n";
-        $error .= date('Y-m-d H:i:s') . " Debug - Trace: " . $e->getTraceAsString() . "\n";
+
+        return true;
+
+    } catch (Exception $e) {
+        $error = date('Y-m-d H:i:s') . " Error - {$e->getMessage()}\n";
+        $error .= date('Y-m-d H:i:s') . " Trace: {$e->getTraceAsString()}\n";
         file_put_contents(dirname(__FILE__) . '/logs.txt', $error, FILE_APPEND);
         return false;
     }

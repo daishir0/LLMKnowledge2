@@ -131,7 +131,7 @@ switch ($action) {
                         'title' => $data['title'],
                         'content' => $data['content']
                     ];
-                    logHistory($pdo, 'prompt', $id, $historyData);
+                    logHistory($pdo, 'prompts', $id, $historyData);
                     
                     $pdo->commit();
                     
@@ -178,7 +178,7 @@ switch ($action) {
                             'content' => $_POST['content']
                         ];
                         
-                        if (!logHistory($pdo, 'prompt', $id, $historyData)) {
+                        if (!logHistory($pdo, 'prompts', $id, $historyData)) {
                             error_log("Warning: Failed to log history for prompt ID: " . $id);
                         }
                     } catch (Exception $historyError) {

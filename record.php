@@ -180,6 +180,9 @@ switch ($action) {
                         'group_id' => !empty($_POST['group_id']) ? $_POST['group_id'] : null,
                         'created_by' => $_SESSION['user']
                     ];
+                    
+                    $stmt->execute($data);
+                    $id = $pdo->lastInsertId();
                 } else {
                     $id = $_GET['id'];
                     $stmt = $pdo->prepare("
@@ -194,9 +197,8 @@ switch ($action) {
                         'group_id' => !empty($_POST['group_id']) ? $_POST['group_id'] : null,
                         'id' => $id
                     ];
+                    $stmt->execute($data);
                 }
-
-                $stmt->execute($data);
                 
                 // 履歴の記録
                 $historyData = [
