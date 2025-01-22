@@ -181,6 +181,34 @@ def update_task_status(cursor, task_id, status, error_message=None, result_knowl
         """, (status, task_id))
     debug_print("Task status updated")
 
+def log_knowledge_history(cursor, knowledge_id, data):
+    """knowledgeの履歴を記録する関数
+    
+    Args:
+        cursor: データベースカーソル
+        knowledge_id: 対象のknowledgeのID
+        data: 記録するデータ（title, question, answer, reference）
+    """
+    debug_print(f"Logging history for knowledge ID: {knowledge_id}")
+    
+    timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    cursor.execute("""
+        INSERT INTO knowledge_history (
+            knowledge_id, title, question, answer, reference,
+            modified_by, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (
+        knowledge_id,
+        data['title'],
+        data['question'],
+        data['answer'],
+        data.get('reference', ''),  # referenceは任意
+        'system',
+        timestamp
+    ))
+    debug_print("History logged successfully")
+
 def main():
     debug_print("Starting main process")
     debug_print(f"データベースパス: {DATABASE_PATH}")
@@ -325,11 +353,23 @@ def main():
                 current_time                    # 更新日時
             ))
 
+            # 新しく挿入されたknowledgeのIDを取得
+            knowledge_id = cursor.lastrowid
+            
+            # 履歴を記録
+            history_data = {
+                'title': title,
+                'question': question,
+                'answer': answer,
+                'reference': reference
+            }
+            log_knowledge_history(cursor, knowledge_id, history_data)
+
             debug_print("Updating task status to completed")
             # タスクのステータスを完了に更新
-            update_task_status(cursor, task_id, 'completed', result_knowledge_id=cursor.lastrowid)
+            update_task_status(cursor, task_id, 'completed', result_knowledge_id=knowledge_id)
             conn.commit()
-            print(f"Knowledge created successfully with ID: {cursor.lastrowid}")
+            print(f"Knowledge created successfully with ID: {knowledge_id}")
 
         else:
             debug_print("No pending or processing tasks found")
