@@ -207,14 +207,43 @@ switch ($action) {
                 logHistory($pdo, 'record', $id, $historyData);
 
                 $pdo->commit();
+                
+                // 元のフィルター条件を維持したリダイレクト
+                $redirectParams = [];
+                if (!empty($_POST['original_search'])) {
+                    $redirectParams[] = 'search=' . urlencode($_POST['original_search']);
+                }
+                if (!empty($_POST['original_group_id'])) {
+                    $redirectParams[] = 'group_id=' . urlencode($_POST['original_group_id']);
+                }
+                
+                $redirectUrl = 'record.php?action=list';
+                if (!empty($redirectParams)) {
+                    $redirectUrl .= '&' . implode('&', $redirectParams);
+                }
+                
+                redirect($redirectUrl);
             } catch (Exception $e) {
                 $pdo->rollBack();
                 error_log("Error in record create/edit: " . $e->getMessage());
                 $_SESSION['error_message'] = "エラーが発生しました。";
-                redirect('record.php?action=list');
+                
+                // エラー時も元のフィルター条件を維持
+                $redirectParams = [];
+                if (!empty($_POST['original_search'])) {
+                    $redirectParams[] = 'search=' . urlencode($_POST['original_search']);
+                }
+                if (!empty($_POST['original_group_id'])) {
+                    $redirectParams[] = 'group_id=' . urlencode($_POST['original_group_id']);
+                }
+                
+                $redirectUrl = 'record.php?action=list';
+                if (!empty($redirectParams)) {
+                    $redirectUrl .= '&' . implode('&', $redirectParams);
+                }
+                
+                redirect($redirectUrl);
             }
-            
-            redirect('record.php?action=list');
         }
         
         if ($action === 'edit') {
@@ -342,7 +371,7 @@ switch ($action) {
                 <td><?= h(date('Y/m/d H:i', strtotime($record['created_at']))) ?></td>
                 <td><?= h(date('Y/m/d H:i', strtotime($record['updated_at']))) ?></td>
                 <td>
-                    <a href="record.php?action=edit&id=<?= h($record['id']) ?>"
+                    <a href="record.php?action=edit&id=<?= h($record['id']) ?>&search=<?= h($searchTerm) ?>&group_id=<?= h($groupId) ?>"
                        class="btn btn-sm btn-warning">編集</a>
                     <a href="record.php?action=delete&id=<?= h($record['id']) ?>"
                        class="btn btn-sm btn-danger"
@@ -585,6 +614,8 @@ switch ($action) {
     </h1>
     
     <form method="POST" class="needs-validation" novalidate>
+        <input type="hidden" name="original_search" value="<?= h($_GET['search'] ?? '') ?>">
+        <input type="hidden" name="original_group_id" value="<?= h($_GET['group_id'] ?? '') ?>">
         <div class="mb-3">
             <label for="title" class="form-label">タイトル</label>
             <input type="text" class="form-control" id="title" name="title" 

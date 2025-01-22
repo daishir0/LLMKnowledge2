@@ -46,9 +46,12 @@ def initialize_database(db_path):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             detail TEXT,
+            task_executed_at DATETIME,
+            prompt_id INTEGER,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             deleted INTEGER DEFAULT 0
+            FOREIGN KEY (prompt_id) REFERENCES prompts(id)
         );
         """)
 

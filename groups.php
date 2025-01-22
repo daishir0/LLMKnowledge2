@@ -10,15 +10,26 @@ $searchTerm = $_GET['search'] ?? '';
 $page = max(1, intval($_GET['page'] ?? 1));
 $perPage = 10;
 
+// プロンプト一覧の取得（plain_to_knowledge限定）
+$prompts_stmt = $pdo->query("
+    SELECT id, title, content 
+    FROM prompts 
+    WHERE deleted = 0 
+    AND category = 'plain_to_knowledge' 
+    ORDER BY title
+");
+$prompts = $prompts_stmt->fetchAll(PDO::FETCH_ASSOC);
+
 switch ($action) {
     case 'list':
         // 検索処理
         if ($searchTerm) {
             $stmt = $pdo->prepare("
-                SELECT * FROM groups 
-                WHERE deleted = 0 
-                AND (name LIKE :search OR detail LIKE :search)
-                ORDER BY created_at DESC
+                SELECT g.*, p.title as prompt_title FROM groups g
+                LEFT JOIN prompts p ON g.prompt_id = p.id
+                WHERE g.deleted = 0 
+                AND (g.name LIKE :search OR g.detail LIKE :search OR p.title LIKE :search)
+                ORDER BY g.created_at DESC
             ");
             $stmt->execute([':search' => "%$searchTerm%"]);
             $groups = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -30,9 +41,10 @@ switch ($action) {
             
             // グループ一覧の取得
             $stmt = $pdo->prepare("
-                SELECT * FROM groups 
-                WHERE deleted = 0
-                ORDER BY created_at DESC 
+                SELECT g.*, p.title as prompt_title FROM groups g
+                LEFT JOIN prompts p ON g.prompt_id = p.id
+                WHERE g.deleted = 0
+                ORDER BY g.created_at DESC 
                 LIMIT :limit OFFSET :offset
             ");
             $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
@@ -50,11 +62,14 @@ switch ($action) {
         // グループ情報の取得
         $stmt = $pdo->prepare("
             SELECT g.*,
+                   p.title as prompt_title,
+                   p.content as prompt_content,
                    COUNT(DISTINCT r.id) as record_count,
                    COUNT(DISTINCT k.id) as knowledge_count
-           FROM groups g
-           LEFT JOIN record r ON r.group_id = g.id AND r.deleted = 0
-           LEFT JOIN knowledge k ON k.group_id = g.id AND k.deleted = 0
+            FROM groups g
+            LEFT JOIN prompts p ON g.prompt_id = p.id
+            LEFT JOIN record r ON r.group_id = g.id AND r.deleted = 0
+            LEFT JOIN knowledge k ON k.group_id = g.id AND k.deleted = 0
             WHERE g.id = :id AND g.deleted = 0
             GROUP BY g.id
         ");
@@ -67,7 +82,8 @@ switch ($action) {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data = [
                 'name' => $_POST['name'],
-                'detail' => $_POST['detail']
+                'detail' => $_POST['detail'],
+                'prompt_id' => $_POST['prompt_id'] ?? null
             ];
             
             try {
@@ -75,14 +91,17 @@ switch ($action) {
 
                 if ($action === 'create') {
                     $stmt = $pdo->prepare("
-                        INSERT INTO groups (name, detail, created_at, updated_at)
-                        VALUES (:name, :detail, '$timestamp', '$timestamp')
+                        INSERT INTO groups (name, detail, prompt_id, created_at, updated_at)
+                        VALUES (:name, :detail, :prompt_id, '$timestamp', '$timestamp')
                     ");
                 } else {
                     $id = $_GET['id'];
                     $stmt = $pdo->prepare("
                         UPDATE groups 
-                        SET name = :name, detail = :detail, updated_at = '$timestamp'
+                        SET name = :name, 
+                            detail = :detail, 
+                            prompt_id = :prompt_id, 
+                            updated_at = '$timestamp'
                         WHERE id = :id AND deleted = 0
                     ");
                     $data['id'] = $id;
@@ -101,7 +120,12 @@ switch ($action) {
         }
         
         if ($action === 'edit') {
-            $stmt = $pdo->prepare("SELECT * FROM groups WHERE id = :id AND deleted = 0");
+            $stmt = $pdo->prepare("
+                SELECT g.*, p.content as prompt_content 
+                FROM groups g
+                LEFT JOIN prompts p ON g.prompt_id = p.id
+                WHERE g.id = :id AND g.deleted = 0
+            ");
             $stmt->execute([':id' => $_GET['id']]);
             $group = $stmt->fetch(PDO::FETCH_ASSOC);
         }
@@ -189,6 +213,7 @@ switch ($action) {
                 <th>ID</th>
                 <th>グループ名</th>
                 <th>説明</th>
+                <th>プロンプト</th>
                 <th>作成日時</th>
                 <th>更新日時</th>
                 <th>操作</th>
@@ -204,14 +229,23 @@ switch ($action) {
                     </a>
                 </td>
                 <td><?= h(mb_strimwidth($group['detail'], 0, 50, "...")) ?></td>
+                <td><?= h($group['prompt_title'] ?? '未設定') ?></td>
                 <td><?= h(date('Y/m/d H:i', strtotime($group['created_at']))) ?></td>
                 <td><?= h(date('Y/m/d H:i', strtotime($group['updated_at']))) ?></td>
                 <td>
                     <a href="groups.php?action=edit&id=<?= h($group['id']) ?>"
                        class="btn btn-sm btn-warning">編集</a>
+                    <button type="button" 
+                            class="btn btn-sm btn-warning bulk-task-register" 
+                            data-group-id="<?= h($group['id']) ?>"
+                            data-group-name="<?= h($group['name']) ?>">
+                        タスク登録
+                    </button>
                     <a href="groups.php?action=delete&id=<?= h($group['id']) ?>"
                        class="btn btn-sm btn-danger"
                        onclick="return confirm('本当に削除しますか？')">削除</a>
+                    <?php if (!empty($group['prompt_title'])): ?>
+                    <?php endif; ?>
                 </td>
             </tr>
             <?php endforeach; ?>
@@ -232,6 +266,43 @@ switch ($action) {
         </ul>
     </nav>
     <?php endif; ?>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        $('.bulk-task-register').click(function() {
+            const $button = $(this);
+            const groupId = $button.data('group-id');
+            const groupName = $button.data('group-name');
+
+            if (confirm(`本当に「${groupName}」グループ内のすべてのプレーンナレッジをタスク登録してよろしいですか？更新対象となるナレッジは一旦削除されます`)) {
+                $button.prop('disabled', true);
+
+                $.ajax({
+                    url: 'common/api.php',
+                    method: 'POST',
+                    data: {
+                        action: 'bulk_task_register_by_group',
+                        group_id: groupId
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            alert('タスク登録が完了しました。');
+                        } else {
+                            alert('エラーが発生しました: ' + response.message);
+                            $button.prop('disabled', false);
+                        }
+                    },
+                    error: function() {
+                        alert('通信エラーが発生しました。');
+                        $button.prop('disabled', false);
+                    }
+                });
+            }
+        });
+    });
+    </script>
 
 <!-- 詳細表示画面 -->
 <?php elseif ($action === 'view'): ?>
@@ -261,6 +332,23 @@ switch ($action) {
                 </div>
             </div>
             
+            <div class="mt-4 border-top pt-4">
+                <h6>プロンプト情報</h6>
+                <?php if (!empty($group['prompt_title'])): ?>
+                    <p class="card-text">
+                        <strong>プロンプト名:</strong> <?= h($group['prompt_title']) ?>
+                    </p>
+                    <?php if (!empty($group['prompt_content'])): ?>
+                    <div class="mt-2">
+                        <label class="form-label">プロンプト内容</label>
+                        <pre class="border p-3 bg-light"><?= h($group['prompt_content']) ?></pre>
+                    </div>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <p class="card-text text-muted">登録されたプロンプトは無し</p>
+                <?php endif; ?>
+            </div>
+
             <div class="mt-4">
                 <h6>作成情報</h6>
                 <p>
@@ -271,16 +359,59 @@ switch ($action) {
         </div>
     </div>
 
-    <div class="mb-4">
-        <a href="groups.php?action=list" class="btn btn-secondary">戻る</a>
-        <a href="groups.php?action=edit&id=<?= h($group['id']) ?>" 
-           class="btn btn-warning">編集</a>
+    <!-- 紐づいているプレーンナレッジの一覧 -->
+    <div class="mt-5">
+        <h3>このグループに紐づいているプレーンナレッジ（プレビュー）</h3>
+        <?php
+        // 全体の件数を取得
+        $total_stmt = $pdo->prepare("
+            SELECT COUNT(*) FROM record
+            WHERE group_id = :group_id  
+            AND deleted = 0
+        ");
+        $total_stmt->execute([':group_id' => $_GET['id']]);
+        $total_count = $total_stmt->fetchColumn();
+        ?>
+        <p>全<?= h($total_count) ?>件中、最新3件を表示しています。</p>
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>タイトル</th>
+                        <th>Reference</th>
+                        <th>更新日時</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php
+                    $stmt = $pdo->prepare("
+                        SELECT * FROM record
+                        WHERE group_id = :group_id
+                        AND deleted = 0
+                        ORDER BY updated_at DESC
+                        LIMIT 3
+                    ");
+                    $stmt->execute([':group_id' => $_GET['id']]);
+                    $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    foreach ($records as $record):
+                    ?>
+                    <tr>
+                        <td><?= h($record['id']) ?></td>
+                        <td><?= h($record['title']) ?></td>
+                        <td><?= h($record['reference']) ?></td>
+                        <td><?= h(date('Y/m/d H:i', strtotime($record['updated_at']))) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 
 <!-- 作成・編集画面 -->
 <?php else: ?>
     <h1 class="mb-4">
-        <?= $action === 'create' ? 'グループ作成' : 'グループ編集' ?>
+        <?= $action === 'create' ? 'グループ作成' : 'グループ編集／プレーンナレッジ一括追加' ?>
     </h1>
     
     <form method="POST" class="needs-validation" novalidate>
@@ -295,59 +426,37 @@ switch ($action) {
             <textarea class="form-control" id="detail" name="detail" rows="5"><?= isset($group) ? h($group['detail']) : '' ?></textarea>
         </div>
         
+        <div class="mb-3">
+            <label for="prompt_id" class="form-label">プロンプト</label>
+            <select class="form-control" id="prompt_id" name="prompt_id">
+                <option value="">プロンプトを選択（オプション）</option>
+                <?php foreach ($prompts as $prompt): ?>
+                <option value="<?= h($prompt['id']) ?>" 
+                    data-content="<?= h($prompt['content']) ?>"
+                    <?= (isset($group) && $group['prompt_id'] == $prompt['id']) ? 'selected' : '' ?>>
+                    <?= h($prompt['title']) ?>
+                </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">プロンプト内容プレビュー</label>
+            <pre class="border p-3 bg-light" id="prompt_preview"><?= isset($group['prompt_content']) ? h($group['prompt_content']) : '' ?></pre>
+        </div>
+        
         <button type="submit" class="btn btn-primary">保存</button>
         <a href="groups.php?action=list" class="btn btn-secondary">キャンセル</a>
     </form>
+
 
     <?php if ($action === 'edit'): ?>
         <!-- jQuery読み込み -->
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-        <!-- 紐づいているプレーンナレッジの一覧 -->
-        <div class="mt-5">
-            <h3>紐づいているプレーンナレッジの一覧</h3>
-            <form id="deleteRecordsForm">
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th><input type="checkbox" id="selectAll"></th>
-                                <th>ID</th>
-                                <th>タイトル</th>
-                                <th>Reference</th>
-                                <th>作成日時</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php
-                            $stmt = $pdo->prepare("
-                                SELECT * FROM record
-                                WHERE group_id = :group_id
-                                AND deleted = 0
-                                ORDER BY created_at DESC
-                            ");
-                            $stmt->execute([':group_id' => $_GET['id']]);
-                            $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                            foreach ($records as $record):
-                            ?>
-                            <tr>
-                                <td><input type="checkbox" name="record_ids[]" value="<?= h($record['id']) ?>"></td>
-                                <td><?= h($record['id']) ?></td>
-                                <td><?= h($record['title']) ?></td>
-                                <td><?= h($record['reference']) ?></td>
-                                <td><?= h(date('Y/m/d H:i', strtotime($record['created_at']))) ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-                <button type="button" id="deleteRecords" class="btn btn-danger">プレーンナレッジ削除</button>
-            </form>
-        </div>
-
         <!-- プレーンナレッジの追加 -->
         <div class="mt-5">
-            <h3>追加するプレーンナレッジ</h3>
+            <h3>プレーンナレッジ一括追加</h3>
             <form id="addRecordsForm">
                 <div class="form-group">
                     <textarea class="form-control" id="newRecords" name="newRecords" rows="10"
@@ -360,44 +469,10 @@ switch ($action) {
         <!-- JavaScript -->
         <script>
         $(document).ready(function() {
-            // 全選択/解除の処理
-            $('#selectAll').change(function() {
-                $('input[name="record_ids[]"]').prop('checked', $(this).prop('checked'));
-            });
-
-            // プレーンナレッジ削除
-            $('#deleteRecords').click(function() {
-                const recordIds = $('input[name="record_ids[]"]:checked').map(function() {
-                    return $(this).val();
-                }).get();
-
-                if (recordIds.length === 0) {
-                    alert('削除するプレーンナレッジを選択してください。');
-                    return;
-                }
-
-                if (!confirm('選択したプレーンナレッジを削除しますか？')) {
-                    return;
-                }
-
-                $.ajax({
-                    url: 'common/api.php',
-                    method: 'POST',
-                    data: {
-                        action: 'delete_records',
-                        record_ids: recordIds
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            location.reload();
-                        } else {
-                            alert('エラーが発生しました: ' + response.message);
-                        }
-                    },
-                    error: function() {
-                        alert('通信エラーが発生しました。');
-                    }
-                });
+            $('#prompt_id').change(function() {
+                const selectedOption = $(this).find('option:selected');
+                const promptContent = selectedOption.data('content');
+                $('#prompt_preview').text(promptContent || '');
             });
 
             // プレーンナレッジ追加
@@ -431,6 +506,18 @@ switch ($action) {
         });
         </script>
     <?php endif; ?>
+
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        $('#prompt_id').change(function() {
+            const selectedOption = $(this).find('option:selected');
+            const promptContent = selectedOption.data('content');
+            $('#prompt_preview').text(promptContent || '');
+        });
+    });
+    </script>
 <?php endif; ?>
 
 <?php require_once APP_ROOT . '/common/footer.php'; ?>
