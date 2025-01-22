@@ -315,7 +315,7 @@ switch ($action) {
             
             <div class="row mt-4">
                 <div class="col-md-6">
-                    <div class="card">
+                    <div class="card bg-primary text-white">
                         <div class="card-body">
                             <h6 class="card-title">プレーンナレッジ数</h6>
                             <p class="card-text display-6"><?= h($group['record_count']) ?></p>
@@ -323,7 +323,7 @@ switch ($action) {
                     </div>
                 </div>
                 <div class="col-md-6">
-                    <div class="card">
+                    <div class="card bg-success text-white">
                         <div class="card-body">
                             <h6 class="card-title">ナレッジ数</h6>
                             <p class="card-text display-6"><?= h($group['knowledge_count']) ?></p>
