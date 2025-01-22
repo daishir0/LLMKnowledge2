@@ -372,7 +372,7 @@ switch ($action) {
         $total_stmt->execute([':group_id' => $_GET['id']]);
         $total_count = $total_stmt->fetchColumn();
         ?>
-        <p>全<?= h($total_count) ?>件中、最新3件を表示しています。</p>
+        <p>全<?= h($total_count) ?>件中、最新3件を表示しています。全件は<a href="record.php?action=list&search=&group_id=<?= $_GET['id'] ?>">こちら</a>。</p>
         <div class="table-responsive">
             <table class="table">
                 <thead>
@@ -448,19 +448,19 @@ switch ($action) {
         <button type="submit" class="btn btn-primary">保存</button>
         <a href="groups.php?action=list" class="btn btn-secondary">キャンセル</a>
     </form>
-
-
+    
     <?php if ($action === 'edit'): ?>
         <!-- jQuery読み込み -->
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <hr>
 
         <!-- プレーンナレッジの追加 -->
         <div class="mt-5">
-            <h3>プレーンナレッジ一括追加</h3>
+            <h3>プレーンナレッジ一括追加機能</h3>
             <form id="addRecordsForm">
                 <div class="form-group">
                     <textarea class="form-control" id="newRecords" name="newRecords" rows="10"
-                              placeholder="URLや共有フォルダのファイルパスを入力（1行に1つ）"></textarea>
+                              placeholder="URLや共有フォルダのファイルパスをここに入力し「追加する」ボタンを押下してください。一括登録できます。（1行に1つ）"></textarea>
                 </div>
                 <button type="button" id="addRecords" class="btn btn-success mt-3">追加する</button>
             </form>
