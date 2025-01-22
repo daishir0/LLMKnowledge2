@@ -19,6 +19,22 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                 <label for="plain_file" class="form-label">CSVファイルを選択</label>
                 <input type="file" class="form-control" id="plain_file" name="file" accept=".csv" required>
             </div>
+            <div class="alert alert-warning">
+                <strong>CSVファイル作成時の注意:</strong>
+                <ul>
+                    <li>このインポートは新規データの追加のみを行います。既存データの編集はできません。</li>
+                    <li>文字コードはUTF-8で保存してください。</li>
+                    <li>CSVファイルの1行目からデータ行として読み込みます。ヘッダー行は不要です。</li>
+                    <li>CSVファイルの列は以下の順番で入力してください：</li>
+                </ul>
+                <ol>
+                    <li>タイトル</li>
+                    <li>テキスト</li>
+                    <li>参照 (オプション)</li>
+                    <li>グループID (オプション)</li>
+                </ol>
+                <p>例: <code>"タイトル例","本文テキスト","参照URL",1</code></p>
+            </div>
             <button type="submit" class="btn btn-primary">インポート</button>
         </form>
     </div>
@@ -32,6 +48,26 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             <div class="mb-3">
                 <label for="knowledge_file" class="form-label">CSVファイルを選択</label>
                 <input type="file" class="form-control" id="knowledge_file" name="file" accept=".csv" required>
+            </div>
+            <div class="alert alert-warning">
+                <strong>CSVファイル作成時の注意:</strong>
+                <ul>
+                    <li>このインポートは新規データの追加のみを行います。既存データの編集はできません。</li>
+                    <li>文字コードはUTF-8で保存してください。</li>
+                    <li>CSVファイルの1行目からデータ行として読み込みます。ヘッダー行は不要です。</li>
+                    <li>CSVファイルの列は以下の順番で入力してください：</li>
+                </ul>
+                <ol>
+                    <li>タイトル</li>
+                    <li>質問</li>
+                    <li>回答</li>
+                    <li>参照 (オプション)</li>
+                    <li>親ID (オプション)</li>
+                    <li>親タイプ (オプション)</li>
+                    <li>プロンプトID (オプション)</li>
+                    <li>グループID (オプション)</li>
+                </ol>
+                <p>例: <code>"ナレッジタイトル","質問内容","回答内容","参照URL",1,"group",2,1</code></p>
             </div>
             <button type="submit" class="btn btn-primary">インポート</button>
         </form>
@@ -65,8 +101,7 @@ if ($bom !== chr(0xEF).chr(0xBB).chr(0xBF)) {
     rewind($handle);
 }
 
-// ヘッダー行を読み込み
-$headers = fgetcsv($handle);
+// ヘッダー行の読み込みを削除（すべての行をデータ行として扱う）
 
 try {
     $pdo->beginTransaction();
@@ -75,13 +110,15 @@ try {
         case 'plain':
             while (($data = fgetcsv($handle)) !== false) {
                 $stmt = $pdo->prepare("
-                    INSERT INTO record (title, text, created_by, created_at, updated_at)
-                    VALUES (:title, :text, :created_by, '$timestamp', '$timestamp')
+                    INSERT INTO record (title, text, reference, group_id, created_by, created_at, updated_at, deleted)
+                    VALUES (:title, :text, :reference, :group_id, :created_by, '$timestamp', '$timestamp', 0)
                 ");
                 
                 $stmt->execute([
-                    ':title' => $data[1], // タイトル
-                    ':text' => $data[2],  // テキスト
+                    ':title' => $data[0],      // タイトル
+                    ':text' => $data[1],       // テキスト
+                    ':reference' => $data[2] ?? null,  // 参照
+                    ':group_id' => $data[3] ?? null,   // グループID
                     ':created_by' => $_SESSION['user']
                 ]);
             }
@@ -92,21 +129,22 @@ try {
                 $stmt = $pdo->prepare("
                     INSERT INTO knowledge (
                         title, question, answer, reference,
-                        parent_type, parent_id, prompt_id, created_by
+                        parent_id, parent_type, prompt_id, group_id, created_by, created_at, updated_at, deleted
                     ) VALUES (
                         :title, :question, :answer, :reference,
-                        :parent_type, :parent_id, :prompt_id, :created_by
+                        :parent_id, :parent_type, :prompt_id, :group_id, :created_by, '$timestamp', '$timestamp', 0
                     )
                 ");
                 
                 $stmt->execute([
-                    ':title' => $data[1],      // タイトル
-                    ':question' => $data[2],   // Question
-                    ':answer' => $data[3],     // Answer
-                    ':reference' => $data[4],  // Reference
-                    ':parent_type' => $data[5],// 親タイプ
-                    ':parent_id' => $data[6],  // 親ID
-                    ':prompt_id' => $data[7],  // プロンプトID
+                    ':title' => $data[0],          // タイトル
+                    ':question' => $data[1],       // 質問
+                    ':answer' => $data[2],         // 回答
+                    ':reference' => $data[3] ?? null,  // 参照
+                    ':parent_id' => $data[4] ?? null,  // 親ID
+                    ':parent_type' => $data[5] ?? null,// 親タイプ
+                    ':prompt_id' => $data[6] ?? null,  // プロンプトID
+                    ':group_id' => $data[7] ?? null,   // グループID
                     ':created_by' => $_SESSION['user']
                 ]);
             }

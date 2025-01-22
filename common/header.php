@@ -20,7 +20,7 @@ require_once __DIR__ . '/auth.php';
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
-                    <li class="nav-item">
+                    <!-- <li class="nav-item">
                         <a class="nav-link" href="<?= BASE_URL ?>/record.php?action=list">プレーンナレッジ管理</a>
                     </li>
                     <li class="nav-item">
@@ -28,12 +28,12 @@ require_once __DIR__ . '/auth.php';
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="<?= BASE_URL ?>/prompts.php">プロンプト管理</a>
+                    </li> -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="<?= BASE_URL ?>/groups.php">グループ管理</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="<?= BASE_URL ?>/tasks.php">タスク管理</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="<?= BASE_URL ?>/groups.php">グループ管理</a>
                     </li>
                 </ul>
                 <ul class="navbar-nav ms-auto">
