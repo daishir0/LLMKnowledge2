@@ -361,7 +361,7 @@ switch ($action) {
 
     <!-- 紐づいているプレーンナレッジの一覧 -->
     <div class="mt-5">
-        <h3>このグループに紐づいているプレーンナレッジ（プレビュー）</h3>
+        <h3>このグループに紐づいているプレーンナレッジ</h3>
         <?php
         // 全体の件数を取得
         $total_stmt = $pdo->prepare("
@@ -398,7 +398,7 @@ switch ($action) {
                     ?>
                     <tr>
                         <td><?= h($record['id']) ?></td>
-                        <td><?= h($record['title']) ?></td>
+                        <td><a href="record.php?action=view&id=<?= h($record['id']) ?>"><?= h($record['title']) ?></a></td>
                         <td><?= h($record['reference']) ?></td>
                         <td><?= h(date('Y/m/d H:i', strtotime($record['updated_at']))) ?></td>
                     </tr>
@@ -407,6 +407,55 @@ switch ($action) {
             </table>
         </div>
     </div>
+
+       <!-- 紐づいているナレッジの一覧 -->
+   <div class="mt-5">
+       <h3>このグループに紐づいているナレッジ</h3>
+       <?php
+       // 全体の件数を取得
+       $total_knowledge_stmt = $pdo->prepare("
+           SELECT COUNT(*) FROM knowledge
+           WHERE group_id = :group_id
+           AND deleted = 0
+       ");
+       $total_knowledge_stmt->execute([':group_id' => $_GET['id']]);
+       $total_knowledge_count = $total_knowledge_stmt->fetchColumn();
+       ?>
+       <p>全<?= h($total_knowledge_count) ?>件中、最新3件を表示しています。全件は<a href="knowledge.php?action=list&search=&group_id=<?= $_GET['id'] ?>">こちら</a>。</p>
+       <div class="table-responsive">
+           <table class="table">
+               <thead>
+                   <tr>
+                       <th>ID</th>
+                       <th>タイトル</th>
+                       <th>Reference</th>
+                       <th>更新日時</th>
+                   </tr>
+               </thead>
+               <tbody>
+                   <?php
+                   $knowledge_stmt = $pdo->prepare("
+                       SELECT * FROM knowledge
+                       WHERE group_id = :group_id
+                       AND deleted = 0
+                       ORDER BY updated_at DESC
+                       LIMIT 3
+                   ");
+                   $knowledge_stmt->execute([':group_id' => $_GET['id']]);
+                   $knowledges = $knowledge_stmt->fetchAll(PDO::FETCH_ASSOC);
+                   foreach ($knowledges as $knowledge):
+                   ?>
+                   <tr>
+                       <td><?= h($knowledge['id']) ?></td>
+                       <td><a href="knowledge.php?action=view&id=<?= h($knowledge['id']) ?>"><?= h($knowledge['title']) ?></a></td>
+                       <td><?= h($knowledge['reference']) ?></td>
+                       <td><?= h(date('Y/m/d H:i', strtotime($knowledge['updated_at']))) ?></td>
+                   </tr>
+                   <?php endforeach; ?>
+               </tbody>
+           </table>
+       </div>
+   </div>
 
 <!-- 作成・編集画面 -->
 <?php else: ?>
