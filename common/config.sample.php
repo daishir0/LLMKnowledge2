@@ -40,6 +40,9 @@ $api_config = [
         'api_key' => '', // MarkItDownServerの APIキーを設定してください see https://github.com/daishir0/MarkItDownServer
         'base_url' => 'https://mark-it-down-server.url',
     ],
+    'bulk' => [
+        'api_key' => '', // Bulk APIのキーを設定してください
+    ],
 ];
 
 return [
