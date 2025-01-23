@@ -9,6 +9,7 @@ date_default_timezone_set('Asia/Tokyo');
 $timestamp = date('Y-m-d H:i:s'); // JSTで現在時刻を取得
 
 // アプリケーションのベースURLを設定、初期設定時に変えること(TODO)
+$root_url = 'https://example.com';  // ルートURL
 $base_url = '/LLMKnowledge2';  // Webルートからの相対パス
 define('BASE_URL', $base_url);
 
