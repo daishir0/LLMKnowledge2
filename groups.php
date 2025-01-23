@@ -457,37 +457,27 @@ switch ($action) {
        </div>
    </div>
 
-   <!-- データコレクタープログラム部分 -->
-   <div class="mt-5">
-       <h3>データコレクタープログラム</h3>
+   <!-- データコレクター部分 -->
+   <div class="mt-5 mb-5">
+       <h3>データコレクター</h3>
        <div class="card">
            <div class="card-body">
-               <h6 class="card-title">データコレクター</h6>
-               <p class="card-text">このグループのプレーンナレッジを収集するプログラムです。下記設定ファイルを同じディレクトリに配置して実行してください。</p>
+               <p class="card-text">このグループの、プレーンナレッジを収集するプログラム（データコレクター）と設定ファイルです。同じディレクトリに置いて実行してください。</p>
+ 
                <a href="client/dist/data_collector.exe" 
                   class="btn btn-primary"
                   download>
                    プログラムをダウンロード
                </a>
-           </div>
-       </div>
-   </div>
-
-   <!-- クライアント設定ダウンロード部分 -->
-   <div class="mt-5">
-       <h3>クライアント設定</h3>
-       <div class="card">
-           <div class="card-body">
-               <h6 class="card-title">設定ファイル</h6>
-               <p class="card-text">このグループ用のデータコレクタープログラム用の設定ファイルです。</p>
+ 
                <a href="common/export_client_yaml.php?group_id=<?= h($id) ?>" 
                   class="btn btn-primary">
                    設定ファイルをダウンロード
                </a>
-           </div>
+ 
+            </div>
        </div>
-   </div>
-
+    </div>
 <!-- 作成・編集画面 -->
 <?php else: ?>
     <h1 class="mb-4">
