@@ -65,6 +65,8 @@ debug:
 
 ## 使用方法
 
+### Pythonスクリプトとして実行
+
 1. 環境のアクティベート
 ```bash
 conda activate client
@@ -74,6 +76,34 @@ conda activate client
 ```bash
 python data_collector.py
 ```
+
+### 実行可能ファイル（exe）の作成と実行
+
+#### exe作成手順
+
+1. PyInstallerのインストール
+```bash
+pip install pyinstaller
+```
+
+2. 実行可能ファイルの作成
+```bash
+pyinstaller --onefile --console data_collector.py
+```
+
+3. 作成されたexeファイルの確認
+- `dist` フォルダ内に `data_collector.exe` が生成されます
+- このexeファイルを任意の場所にコピーして使用できます
+
+#### exe実行方法
+
+1. `data_collector.exe` と同じディレクトリに `config.yaml` を配置
+2. `data_collector.exe` をダブルクリックで実行
+
+※ 注意事項：
+- exeファイルは環境に依存せず単独で動作します（Python環境は不要）
+- 設定ファイル（config.yaml）は必ずexeファイルと同じディレクトリに配置してください
+- 初回実行時にWindows Defenderなどのセキュリティ警告が表示される場合があります
 
 ## ログ
 
