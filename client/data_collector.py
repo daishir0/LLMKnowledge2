@@ -34,6 +34,14 @@ class DataCollector:
                 b'<?xml'
             ]
         },
+        'text': {
+            'content_types': [
+                'text/plain',
+                'text/txt'
+            ],
+            'extensions': ['.txt'],
+            'magic_numbers': []
+        },
         'pdf': {
             'content_types': [
                 'application/pdf',
@@ -235,6 +243,11 @@ class DataCollector:
                     self.debug_log(f'Content-Typeによる判定結果: {file_type}')
                     return file_type
 
+        # 拡張子による判定（テキストファイル用）
+        if content_type and 'text/plain' in content_type.lower():
+            self.debug_log('Content-Typeによるテキストファイル判定')
+            return 'text'
+
         # マジックナンバーによる判定
         content_start = content[:32]  # 先頭32バイトを確認
         for file_type, type_info in self.FILE_TYPES.items():
@@ -293,6 +306,12 @@ class DataCollector:
 
             self.debug_log(f'ID {id}: ファイルタイプ: {file_type}')
             
+            # テキストファイルの場合は変換せずにそのまま返す
+            if file_type == 'text':
+                if isinstance(content, bytes):
+                    content = content.decode('utf-8', errors='ignore')
+                return type('ConversionResult', (), {'text_content': content})()
+
             # 一時ファイルの作成
             temp_file = self.save_temp_file(content, file_type)
             
@@ -402,6 +421,7 @@ class DataCollector:
                             '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                             '.ppt': 'application/vnd.ms-powerpoint',
                             '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                            '.txt': 'text/plain'
                         }.get(ext, 'application/octet-stream')
 
                         # コンテンツの変換
@@ -496,7 +516,6 @@ class DataCollector:
                                 self.debug_log(f'ID {id}: レスポンスサイズ: {len(response.content)} bytes')
                                 
                                 content_text = response.content.decode('utf-8', errors='ignore')
-                                # self.debug_log(f'ID {id}: コンテンツ全文:\n{content_text}')
                                 
                                 self.debug_log(f'ID {id}: コンテンツ取得成功')
                                 
@@ -610,4 +629,4 @@ def main():
         collector.close()
 
 if __name__ == '__main__':
-    main() 
+    main()
