@@ -12,8 +12,8 @@ API_KEY = os.environ.get('OPENAI_API_KEY', 'your-apikey-here')
 # 基本パラメーター
 CHUNK_SIZE = 2000        # 1チャンクの最小文字数
 MAX_CHUNK_SIZE = 3000   # 1チャンクの最大文字数
-MAX_RETRIES = 3         # APIリトライ回数
-RETRY_DELAY = 1         # リトライ間隔（秒）
+MAX_RETRIES = 5         # APIリトライ回数
+RETRY_DELAY = 5         # リトライ間隔（秒）
 API_RATE_LIMIT = 0.5    # API呼び出し間隔（秒）
 DEBUG_MODE = False        # デバッグモードの有効無効
 
@@ -224,17 +224,13 @@ def main():
 
     try:
         debug_print("Fetching pending/processing task")
-        # pendingまたはprocessingのタスクを1件取得（プロンプトIDも含める）
+        # pendingのタスクを1件取得（プロンプトIDも含める）
         cursor.execute("""
             SELECT t.id, t.source_type, t.source_id, t.prompt_content, t.source_text, t.prompt_id as prompt_id, t.status, t.group_id
             FROM tasks t
             -- LEFT JOIN prompts p ON p.content = t.prompt_content AND p.deleted = 0
-            WHERE t.status IN ('pending', 'processing')
+            WHERE t.status = 'pending'
             ORDER BY
-                CASE t.status
-                    WHEN 'processing' THEN 1
-                    WHEN 'pending' THEN 2
-                END,
                 t.created_at
             LIMIT 1
         """)
