@@ -403,6 +403,147 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
             break;
 
+        case 'force_bulk_task_register_by_group':
+            // ログイン確認
+            if (!isset($_SESSION['user'])) {
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'ログインが必要です。'
+                ]);
+                exit;
+            }
+
+            // グループIDの取得
+            $group_id = $_POST['group_id'] ?? null;
+            if (!$group_id) {
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'グループIDが指定されていません。'
+                ]);
+                exit;
+            }
+
+            try {
+                // トランザクション開始
+                $pdo->beginTransaction();
+
+                // グループとプロンプト情報の取得
+                $stmt = $pdo->prepare("
+                    SELECT g.id, g.prompt_id, p.content as prompt_content
+                    FROM groups g
+                    LEFT JOIN prompts p ON g.prompt_id = p.id
+                    WHERE g.id = :group_id AND g.deleted = 0
+                ");
+                $stmt->execute([':group_id' => $group_id]);
+                $group = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$group || !$group['prompt_id']) {
+                    throw new Exception('グループまたはプロンプトが見つかりません。');
+                }
+
+                // 対象のレコードを取得（すべてのアクティブなレコード）
+                $records_stmt = $pdo->prepare("
+                    SELECT r.id, r.text, r.reference 
+                    FROM record r
+                    WHERE r.group_id = :group_id 
+                    AND r.deleted = 0
+                ");
+                $records_stmt->execute([':group_id' => $group_id]);
+                $records = $records_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                if (empty($records)) {
+                    throw new Exception('タスク登録対象のレコードがありません。');
+                }
+
+                // 既存のナレッジを論理削除
+                $delete_knowledge_stmt = $pdo->prepare("
+                    UPDATE knowledge 
+                    SET deleted = 1, updated_at = '$timestamp'
+                    WHERE group_id = :group_id 
+                    AND parent_type = 'record'
+                    AND deleted = 0
+                ");
+                $delete_knowledge_stmt->execute([':group_id' => $group_id]);
+
+                // タスクの一括登録
+                $tasks_stmt = $pdo->prepare("
+                    INSERT INTO tasks (
+                        source_type,
+                        source_id,
+                        source_text,
+                        prompt_content,
+                        prompt_id,
+                        group_id,
+                        created_by,
+                        created_at,
+                        updated_at,
+                        status
+                    ) VALUES (
+                        'record',
+                        :source_id,
+                        :source_text,
+                        :prompt_content,
+                        :prompt_id,
+                        :group_id,
+                        :created_by,
+                        '$timestamp',
+                        '$timestamp',
+                        'pending'
+                    )
+                ");
+
+                // グループのプロンプト内容
+                $prompt_content = $group['prompt_content'];
+
+                // タスク登録処理
+                foreach ($records as $record) {
+                    // referenceがある場合、プロンプト内の{{reference}}を置換
+                    $current_prompt_content = $prompt_content;
+                    if (!empty($record['reference'])) {
+                        $current_prompt_content = str_replace('{{reference}}', $record['reference'], $current_prompt_content);
+                    }
+
+                    $tasks_stmt->execute([
+                        ':source_id' => $record['id'],
+                        ':source_text' => $record['text'],
+                        ':prompt_content' => $current_prompt_content,
+                        ':prompt_id' => $group['prompt_id'],
+                        ':group_id' => $group_id,
+                        ':created_by' => $_SESSION['user']
+                    ]);
+                }
+
+                // グループの最終タスク実行日時を更新
+                $update_group_stmt = $pdo->prepare("
+                    UPDATE groups 
+                    SET task_executed_at = '$timestamp'
+                    WHERE id = :group_id
+                ");
+                $update_group_stmt->execute([':group_id' => $group_id]);
+
+                // トランザクションコミット
+                $pdo->commit();
+
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => true, 
+                    'message' => count($records) . '件のタスクを登録しました。'
+                ]);
+
+            } catch (Exception $e) {
+                // トランザクションロールバック
+                $pdo->rollBack();
+
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => false, 
+                    'message' => 'エラーが発生しました: ' . $e->getMessage()
+                ]);
+            }
+            break;
+
         default:
             header('Content-Type: application/json');
             echo json_encode(['success' => false, 'message' => '不正なアクションです。']);

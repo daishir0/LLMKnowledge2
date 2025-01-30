@@ -241,6 +241,12 @@ switch ($action) {
                             data-group-name="<?= h($group['name']) ?>">
                         タスク登録
                     </button>
+                    <button type="button" 
+                            class="btn btn-sm btn-danger force-bulk-task-register" 
+                            data-group-id="<?= h($group['id']) ?>"
+                            data-group-name="<?= h($group['name']) ?>">
+                        強制全タスク登録
+                    </button>
                     <a href="groups.php?action=delete&id=<?= h($group['id']) ?>"
                        class="btn btn-sm btn-danger"
                        onclick="return confirm('本当に削除しますか？')">削除</a>
@@ -283,6 +289,38 @@ switch ($action) {
                     method: 'POST',
                     data: {
                         action: 'bulk_task_register_by_group',
+                        group_id: groupId
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            alert('タスク登録が完了しました。');
+                        } else {
+                            alert('エラーが発生しました: ' + response.message);
+                            $button.prop('disabled', false);
+                        }
+                    },
+                    error: function() {
+                        alert('通信エラーが発生しました。');
+                        $button.prop('disabled', false);
+                    }
+                });
+            }
+        });
+
+        $('.force-bulk-task-register').click(function() {
+            const $button = $(this);
+            const groupId = $button.data('group-id');
+            const groupName = $button.data('group-name');
+
+            if (confirm(`このグループの、すべてのナレッジを削除して、すべてのタスクを登録します。本当に良いですか？`)) {
+                $button.prop('disabled', true);
+
+                $.ajax({
+                    url: 'common/api.php',
+                    method: 'POST',
+                    data: {
+                        action: 'force_bulk_task_register_by_group',
                         group_id: groupId
                     },
                     dataType: 'json',
