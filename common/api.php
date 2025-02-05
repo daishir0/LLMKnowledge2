@@ -3,12 +3,34 @@ require_once 'config.php';
 require_once 'functions.php';
 session_start();
 
+// Bearer認証のチェック関数を追加
+function isValidBearerToken() {
+    global $api_config;
+    
+    $headers = apache_request_headers();
+    if (!isset($headers['Authorization'])) {
+        return false;
+    }
+    
+    if (preg_match('/Bearer\s(\S+)/', $headers['Authorization'], $matches)) {
+        $token = $matches[1];
+        return $token === $api_config['bulk']['api_key'];
+    }
+    
+    return false;
+}
+
+// 認証チェック関数
+function isAuthenticated() {
+    return isset($_SESSION['user']) || isValidBearerToken();
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     switch ($_POST['action']) {
         case 'create_task':
-            if (!isset($_SESSION['user'])) {
+            if (!isAuthenticated()) {
                 header('Content-Type: application/json');
-                echo json_encode(['success' => false, 'message' => 'ログインが必要です。']);
+                echo json_encode(['success' => false, 'message' => '認証が必要です。']);
                 exit;
             }
 
@@ -62,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 :source_type,
                                 :source_id,
                                 :source_text,
-                                :prompt_content,
+                                :prompt_content,  // 置換後のプロンプト内容を使用
                                 :prompt_id,
                                 :group_id,
                                 :created_by,
@@ -76,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             ':source_type' => $sourceType,
                             ':source_id' => $sourceId,
                             ':source_text' => $source['text'],
-                            ':prompt_content' => $promptContent,  // 置換後のプロンプト内容を使用
+                            ':prompt_content' => $promptContent,
                             ':prompt_id' => $promptId,
                             ':group_id' => $source['group_id'],
                             ':created_by' => $_SESSION['user']
@@ -101,9 +123,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             break;
 
         case 'create_record':
-            if (!isset($_SESSION['user'])) {
+            if (!isAuthenticated()) {
                 header('Content-Type: application/json');
-                echo json_encode(['success' => false, 'message' => 'ログインが必要です。']);
+                echo json_encode(['success' => false, 'message' => '認証が必要です。']);
                 exit;
             }
 
@@ -137,9 +159,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             break;
 
         case 'delete_records':
-            if (!isset($_SESSION['user'])) {
+            if (!isAuthenticated()) {
                 header('Content-Type: application/json');
-                echo json_encode(['success' => false, 'message' => 'ログインが必要です。']);
+                echo json_encode(['success' => false, 'message' => '認証が必要です。']);
                 exit;
             }
 
@@ -175,9 +197,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             break;
 
         case 'add_records':
-            if (!isset($_SESSION['user'])) {
+            if (!isAuthenticated()) {
                 header('Content-Type: application/json');
-                echo json_encode(['success' => false, 'message' => 'ログインが必要です。']);
+                echo json_encode(['success' => false, 'message' => '認証が必要です。']);
                 exit;
             }
 
@@ -245,12 +267,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             break;
 
         case 'bulk_task_register_by_group':
-            // ログイン確認
-            if (!isset($_SESSION['user'])) {
+            if (!isAuthenticated()) {
                 header('Content-Type: application/json');
                 echo json_encode([
                     'success' => false, 
-                    'message' => 'ログインが必要です。'
+                    'message' => '認証が必要です。'
                 ]);
                 exit;
             }
@@ -404,12 +425,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             break;
 
         case 'force_bulk_task_register_by_group':
-            // ログイン確認
-            if (!isset($_SESSION['user'])) {
+            if (!isAuthenticated()) {
                 header('Content-Type: application/json');
                 echo json_encode([
                     'success' => false, 
-                    'message' => 'ログインが必要です。'
+                    'message' => '認証が必要です。'
                 ]);
                 exit;
             }
