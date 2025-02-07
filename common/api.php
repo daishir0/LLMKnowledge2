@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                                 :source_type,
                                 :source_id,
                                 :source_text,
-                                :prompt_content,  // 置換後のプロンプト内容を使用
+                                :prompt_content,
                                 :prompt_id,
                                 :group_id,
                                 :created_by,
@@ -94,15 +94,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             )
                         ");
                         
-                        $stmt->execute([
-                            ':source_type' => $sourceType,
-                            ':source_id' => $sourceId,
-                            ':source_text' => $source['text'],
-                            ':prompt_content' => $promptContent,
-                            ':prompt_id' => $promptId,
-                            ':group_id' => $source['group_id'],
-                            ':created_by' => $_SESSION['user']
-                        ]);
+                        $stmt->bindValue(':source_type', $sourceType, PDO::PARAM_STR);
+                        $stmt->bindValue(':source_id', $sourceId, PDO::PARAM_INT);
+                        $stmt->bindValue(':source_text', $source['text'], PDO::PARAM_STR);
+                        $stmt->bindValue(':prompt_content', $promptContent, PDO::PARAM_STR);
+                        $stmt->bindValue(':prompt_id', $promptId, PDO::PARAM_INT);
+                        $stmt->bindValue(':group_id', $source['group_id'], PDO::PARAM_INT);
+                        $stmt->bindValue(':created_by', $_SESSION['user'], PDO::PARAM_STR);
+                        $stmt->execute();
 
                         $pdo->commit();
                         header('Content-Type: application/json');
@@ -385,14 +384,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         $current_prompt_content = str_replace('{{reference}}', $record['reference'], $current_prompt_content);
                     }
 
-                    $tasks_stmt->execute([
-                        ':source_id' => $record['id'],
-                        ':source_text' => $record['text'],
-                        ':prompt_content' => $current_prompt_content,
-                        ':prompt_id' => $group['prompt_id'],
-                        ':group_id' => $group_id,
-                        ':created_by' => $_SESSION['user']
-                    ]);
+                    $tasks_stmt->bindValue(':source_id', $record['id'], PDO::PARAM_INT);
+                    $tasks_stmt->bindValue(':source_text', $record['text'], PDO::PARAM_STR);
+                    $tasks_stmt->bindValue(':prompt_content', $current_prompt_content, PDO::PARAM_STR);
+                    $tasks_stmt->bindValue(':prompt_id', $group['prompt_id'], PDO::PARAM_INT);
+                    $tasks_stmt->bindValue(':group_id', $group_id, PDO::PARAM_INT);
+                    $tasks_stmt->bindValue(':created_by', $_SESSION['user'], PDO::PARAM_STR);
+                    $tasks_stmt->execute();
                 }
 
                 // グループの最終タスク実行日時を更新
@@ -525,14 +523,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         $current_prompt_content = str_replace('{{reference}}', $record['reference'], $current_prompt_content);
                     }
 
-                    $tasks_stmt->execute([
-                        ':source_id' => $record['id'],
-                        ':source_text' => $record['text'],
-                        ':prompt_content' => $current_prompt_content,
-                        ':prompt_id' => $group['prompt_id'],
-                        ':group_id' => $group_id,
-                        ':created_by' => $_SESSION['user']
-                    ]);
+                    $tasks_stmt->bindValue(':source_id', $record['id'], PDO::PARAM_INT);
+                    $tasks_stmt->bindValue(':source_text', $record['text'], PDO::PARAM_STR);
+                    $tasks_stmt->bindValue(':prompt_content', $current_prompt_content, PDO::PARAM_STR);
+                    $tasks_stmt->bindValue(':prompt_id', $group['prompt_id'], PDO::PARAM_INT);
+                    $tasks_stmt->bindValue(':group_id', $group_id, PDO::PARAM_INT);
+                    $tasks_stmt->bindValue(':created_by', $_SESSION['user'], PDO::PARAM_STR);
+                    $tasks_stmt->execute();
                 }
 
                 // グループの最終タスク実行日時を更新
