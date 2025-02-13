@@ -39,16 +39,52 @@ function search($pdo, $table, $searchTerm, $columns) {
 
 function getPagination($total, $perPage, $currentPage) {
     $totalPages = ceil($total / $perPage);
-    $start = max(1, $currentPage - 2);
-    $end = min($totalPages, $currentPage + 2);
-    
+    $currentPage = max(1, min($currentPage, $totalPages)); // ページ番号の正規化
+    $range = 2; // 現在のページの前後に表示するページ数
+
+    // 表示するページ番号の配列を作成
+    $pages = [];
+    $pages[] = 1; // 最初のページは常に表示
+
+    // 現在のページの前後のページを追加
+    for ($i = max(2, $currentPage - $range); $i <= min($currentPage + $range, $totalPages - 1); $i++) {
+        $pages[] = $i;
+    }
+
+    if ($totalPages > 1) {
+        $pages[] = $totalPages; // 最後のページを追加（1ページのみの場合は追加しない）
+    }
+
+    // 重複を削除してソート
+    $pages = array_unique($pages);
+    sort($pages);
+
+    // ページ配列に省略記号を追加
+    $pagesWithDots = [];
+    $lastPage = 0;
+    foreach ($pages as $page) {
+        if ($lastPage && $page - $lastPage > 1) {
+            $pagesWithDots[] = '...';
+        }
+        $pagesWithDots[] = $page;
+        $lastPage = $page;
+    }
+
     return [
         'total' => $total,
         'per_page' => $perPage,
         'current_page' => $currentPage,
         'total_pages' => $totalPages,
-        'start' => $start,
-        'end' => $end
+        'pages' => $pagesWithDots,
+        'has_previous' => $currentPage > 1,
+        'has_next' => $currentPage < $totalPages,
+        'from' => ($currentPage - 1) * $perPage + 1,
+        'to' => min($currentPage * $perPage, $total),
+        'showing' => sprintf('全%d件中 %d-%d件を表示中',
+            $total,
+            ($currentPage - 1) * $perPage + 1,
+            min($currentPage * $perPage, $total)
+        )
     ];
 }
 

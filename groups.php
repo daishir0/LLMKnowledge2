@@ -8,7 +8,7 @@ require_once APP_ROOT . '/common/header.php';
 $action = $_GET['action'] ?? 'list';
 $searchTerm = $_GET['search'] ?? '';
 $page = max(1, intval($_GET['page'] ?? 1));
-$perPage = 10;
+$perPage = isset($_GET['per_page']) ? max(10, min(100, intval($_GET['per_page']))) : 10; // 10-100の範囲で制限
 
 // プロンプト一覧の取得（plain_to_knowledge限定）
 $prompts_stmt = $pdo->query("
@@ -258,19 +258,74 @@ switch ($action) {
         </tbody>
     </table>
 
+    <!-- 表示件数選択 -->
+    <div class="row mb-3">
+        <div class="col-auto">
+            <form class="d-flex align-items-center" method="GET" action="groups.php">
+                <input type="hidden" name="action" value="list">
+                <input type="hidden" name="search" value="<?= h($searchTerm) ?>">
+                <label for="perPage" class="me-2">表示件数:</label>
+                <select id="perPage" name="per_page" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
+                    <?php foreach ([10, 20, 50, 100] as $value): ?>
+                    <option value="<?= $value ?>" <?= $perPage == $value ? 'selected' : '' ?>><?= $value ?>件</option>
+                    <?php endforeach; ?>
+                </select>
+            </form>
+        </div>
+        <div class="col text-end">
+            <p class="mb-0"><?= h($pagination['showing']) ?></p>
+        </div>
+    </div>
+
     <!-- ページネーション -->
     <?php if ($pagination['total_pages'] > 1): ?>
-    <nav>
+    <nav aria-label="ページナビゲーション">
         <ul class="pagination justify-content-center">
-            <?php for ($i = $pagination['start']; $i <= $pagination['end']; $i++): ?>
-            <li class="page-item <?= $i === $page ? 'active' : '' ?>">
-                <a class="page-link" href="groups.php?action=list&page=<?= $i ?><?= $searchTerm ? '&search=' . h($searchTerm) : '' ?>">
-                    <?= $i ?>
+            <!-- 前へボタン -->
+            <li class="page-item <?= !$pagination['has_previous'] ? 'disabled' : '' ?>">
+                <a class="page-link" href="<?= $pagination['has_previous'] ? 'groups.php?action=list&page=' . ($page - 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . '&per_page=' . $perPage : '#' ?>" aria-label="前のページ" <?= !$pagination['has_previous'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
+                    <span aria-hidden="true">&laquo;</span>
+                    <span class="visually-hidden">前のページ</span>
                 </a>
             </li>
-            <?php endfor; ?>
+
+            <!-- ページ番号 -->
+            <?php foreach ($pagination['pages'] as $p): ?>
+                <?php if ($p === '...'): ?>
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                <?php else: ?>
+                    <li class="page-item <?= $p === $page ? 'active' : '' ?>">
+                        <a class="page-link" href="groups.php?action=list&page=<?= $p ?><?= $searchTerm ? '&search=' . h($searchTerm) : '' ?>&per_page=<?= $perPage ?>" <?= $p === $page ? 'aria-current="page"' : '' ?>>
+                            <?= $p ?>
+                        </a>
+                    </li>
+                <?php endif; ?>
+            <?php endforeach; ?>
+
+            <!-- 次へボタン -->
+            <li class="page-item <?= !$pagination['has_next'] ? 'disabled' : '' ?>">
+                <a class="page-link" href="<?= $pagination['has_next'] ? 'groups.php?action=list&page=' . ($page + 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . '&per_page=' . $perPage : '#' ?>" aria-label="次のページ" <?= !$pagination['has_next'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
+                    <span aria-hidden="true">&raquo;</span>
+                    <span class="visually-hidden">次のページ</span>
+                </a>
+            </li>
         </ul>
     </nav>
+
+    <!-- ページ番号直接入力フォーム -->
+    <div class="text-center mt-3">
+        <form class="d-inline-flex align-items-center" method="GET" action="groups.php">
+            <input type="hidden" name="action" value="list">
+            <input type="hidden" name="search" value="<?= h($searchTerm) ?>">
+            <input type="hidden" name="per_page" value="<?= $perPage ?>">
+            <label for="pageInput" class="me-2">ページ指定:</label>
+            <input type="number" id="pageInput" name="page" class="form-control form-control-sm me-2" style="width: 80px;" min="1" max="<?= $pagination['total_pages'] ?>" value="<?= $page ?>">
+            <button type="submit" class="btn btn-sm btn-outline-primary">移動</button>
+            <span class="ms-2">/ <?= $pagination['total_pages'] ?>ページ</span>
+        </form>
+    </div>
     <?php endif; ?>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
