@@ -119,32 +119,45 @@ switch ($action) {
         </div>
     </div>
 
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>ソース</th>
-                <th>プロンプト</th>
-                <th>ステータス</th>
-                <th>作成者</th>
-                <th>作成日時</th>
-            </tr>
-        </thead>
-        <tbody>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <colgroup>
+                <col style="min-width: 80px; width: 80px;">  <!-- ID列 -->
+                <col style="min-width: 200px; max-width: 300px;">  <!-- ソース列 -->
+                <col style="min-width: 200px; max-width: 300px;">  <!-- プロンプト列 -->
+                <col style="min-width: 120px; width: 120px;">  <!-- ステータス列 -->
+                <col style="min-width: 120px; width: 120px;">  <!-- 作成者列 -->
+                <col style="min-width: 120px; width: 120px;">  <!-- 作成日時列 -->
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>ソース</th>
+                    <th>プロンプト</th>
+                    <th>ステータス</th>
+                    <th class="d-none d-md-table-cell">作成者</th>
+                    <th class="d-none d-md-table-cell">作成日時</th>
+                </tr>
+            </thead>
+            <tbody>
             <?php foreach ($tasks as $task): ?>
             <tr>
                 <td><?= h($task['id']) ?></td>
-                <td>
+                <td style="max-width: 300px;">
                     <?php if ($task['source_type'] === 'record'): ?>
-                        <span class="badge bg-info">プレーン</span>
+                        <span class="badge bg-info me-1">プレーン</span>
                     <?php else: ?>
-                        <span class="badge bg-success">ナレッジ</span>
+                        <span class="badge bg-success me-1">ナレッジ</span>
                     <?php endif; ?>
-                    <a href="tasks.php?action=view&id=<?= h($task['id']) ?>">
-                        <?= h($task['source_title']) ?>
-                    </a>
+                    <span class="text-truncate d-inline-block" style="max-width: calc(100% - 80px); vertical-align: middle;" title="<?= h($task['source_title']) ?>">
+                        <a href="tasks.php?action=view&id=<?= h($task['id']) ?>" class="text-truncate d-block">
+                            <?= h($task['source_title']) ?>
+                        </a>
+                    </span>
                 </td>
-                <td><?= h($task['prompt_title']) ?></td>
+                <td class="text-truncate" style="max-width: 300px;" title="<?= h($task['prompt_title']) ?>">
+                    <?= h($task['prompt_title']) ?>
+                </td>
                 <td>
                     <?php
                     $statusBadgeClass = [
@@ -159,12 +172,48 @@ switch ($action) {
                         <?= h($task['status']) ?>
                     </span>
                 </td>
-                <td><?= h($task['created_by']) ?></td>
-                <td><?= h(date('Y/m/d H:i', strtotime($task['created_at']))) ?></td>
+                <td class="d-none d-md-table-cell"><?= h($task['created_by']) ?></td>
+                <td class="d-none d-md-table-cell"><?= h(date('Y/m/d H:i', strtotime($task['created_at']))) ?></td>
             </tr>
             <?php endforeach; ?>
         </tbody>
-    </table>
+        </table>
+    </div>
+
+    <style>
+        /* テーブルセルのスタイル */
+        .table td {
+            vertical-align: middle;
+        }
+        
+        /* バッジの右マージン */
+        .badge {
+            margin-right: 8px;
+        }
+        
+        /* リンクテキストが省略される場合でもホバー可能に */
+        .text-truncate a {
+            display: block;
+            width: 100%;
+        }
+        
+        /* ツールチップのスタイル */
+        [title] {
+            position: relative;
+            cursor: help;
+        }
+
+        /* スマートフォンでの表示調整 */
+        @media (max-width: 576px) {
+            .table td {
+                white-space: normal;
+                word-break: break-word;
+            }
+            .text-truncate {
+                max-width: 200px !important;
+            }
+        }
+    </style>
 
     <!-- 表示件数選択 -->
     <div class="row mb-3">

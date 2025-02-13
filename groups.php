@@ -207,56 +207,110 @@ switch ($action) {
         </div>
     </div>
 
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>グループ名</th>
-                <th>説明</th>
-                <th>プロンプト</th>
-                <th>作成日時</th>
-                <th>更新日時</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <colgroup>
+                <col style="min-width: 80px; width: 80px;">  <!-- ID列 -->
+                <col style="min-width: 150px; max-width: 200px;">  <!-- グループ名列 -->
+                <col style="min-width: 200px; max-width: 300px;">  <!-- 説明列 -->
+                <col style="min-width: 150px; max-width: 200px;">  <!-- プロンプト列 -->
+                <col style="min-width: 120px; width: 120px;">  <!-- 作成日時列 -->
+                <col style="min-width: 120px; width: 120px;">  <!-- 更新日時列 -->
+                <col style="min-width: 300px; width: 300px;">  <!-- 操作列 -->
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>グループ名</th>
+                    <th>説明</th>
+                    <th>プロンプト</th>
+                    <th class="d-none d-md-table-cell">作成日時</th>
+                    <th class="d-none d-md-table-cell">更新日時</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
             <?php foreach ($groups as $group): ?>
             <tr>
                 <td><?= h($group['id']) ?></td>
-                <td>
-                    <a href="groups.php?action=view&id=<?= h($group['id']) ?>">
+                <td class="text-truncate" style="max-width: 200px;" title="<?= h($group['name']) ?>">
+                    <a href="groups.php?action=view&id=<?= h($group['id']) ?>" class="d-block text-truncate">
                         <?= h($group['name']) ?>
                     </a>
                 </td>
-                <td><?= h(mb_strimwidth($group['detail'], 0, 50, "...")) ?></td>
-                <td><?= h($group['prompt_title'] ?? '未設定') ?></td>
-                <td><?= h(date('Y/m/d H:i', strtotime($group['created_at']))) ?></td>
-                <td><?= h(date('Y/m/d H:i', strtotime($group['updated_at']))) ?></td>
+                <td style="word-break: break-word;"><?= h($group['detail']) ?></td>
+                <td class="text-truncate" style="max-width: 200px;" title="<?= h($group['prompt_title'] ?? '未設定') ?>">
+                    <?= h($group['prompt_title'] ?? '未設定') ?>
+                </td>
+                <td class="d-none d-md-table-cell"><?= h(date('Y/m/d H:i', strtotime($group['created_at']))) ?></td>
+                <td class="d-none d-md-table-cell"><?= h(date('Y/m/d H:i', strtotime($group['updated_at']))) ?></td>
                 <td>
-                    <a href="groups.php?action=edit&id=<?= h($group['id']) ?>"
-                       class="btn btn-sm btn-warning">編集</a>
-                    <button type="button" 
-                            class="btn btn-sm btn-warning bulk-task-register" 
-                            data-group-id="<?= h($group['id']) ?>"
-                            data-group-name="<?= h($group['name']) ?>">
-                        タスク登録
-                    </button>
-                    <button type="button" 
-                            class="btn btn-sm btn-danger force-bulk-task-register" 
-                            data-group-id="<?= h($group['id']) ?>"
-                            data-group-name="<?= h($group['name']) ?>">
-                        強制全タスク登録
-                    </button>
-                    <a href="groups.php?action=delete&id=<?= h($group['id']) ?>"
-                       class="btn btn-sm btn-danger"
-                       onclick="return confirm('本当に削除しますか？')">削除</a>
-                    <?php if (!empty($group['prompt_title'])): ?>
-                    <?php endif; ?>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="groups.php?action=edit&id=<?= h($group['id']) ?>"
+                           class="btn btn-sm btn-warning">編集</a>
+                        <button type="button"
+                                class="btn btn-sm btn-warning bulk-task-register"
+                                data-group-id="<?= h($group['id']) ?>"
+                                data-group-name="<?= h($group['name']) ?>">
+                            タスク登録
+                        </button>
+                        <button type="button"
+                                class="btn btn-sm btn-danger force-bulk-task-register"
+                                data-group-id="<?= h($group['id']) ?>"
+                                data-group-name="<?= h($group['name']) ?>">
+                            強制全タスク登録
+                        </button>
+                        <a href="groups.php?action=delete&id=<?= h($group['id']) ?>"
+                           class="btn btn-sm btn-danger"
+                           onclick="return confirm('本当に削除しますか？')">削除</a>
+                    </div>
                 </td>
             </tr>
             <?php endforeach; ?>
         </tbody>
-    </table>
+        </table>
+    </div>
+
+    <style>
+        /* テーブルセルのスタイル */
+        .table td {
+            vertical-align: middle;
+        }
+        
+        /* リンクテキストが省略される場合でもホバー可能に */
+        .text-truncate a {
+            display: block;
+            width: 100%;
+        }
+        
+        /* ツールチップのスタイル */
+        [title] {
+            position: relative;
+            cursor: help;
+        }
+
+        /* ボタングループのスタイル */
+        .gap-2 {
+            gap: 0.5rem !important;
+        }
+
+        /* スマートフォンでの表示調整 */
+        @media (max-width: 576px) {
+            .table td {
+                white-space: normal;
+                word-break: break-word;
+            }
+            .text-truncate {
+                max-width: 150px !important;
+            }
+            .d-flex.flex-wrap {
+                gap: 0.25rem !important;
+            }
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
 
     <!-- 表示件数選択 -->
     <div class="row mb-3">

@@ -244,46 +244,87 @@ switch ($action) {
         </div>
     </div>
 
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>タイトル</th>
-                <th>カテゴリ</th>
-                <th>使用回数</th>
-                <th>作成日時</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($records as $record): ?>
-            <tr>
-                <td><?= h($record['id']) ?></td>
-                <td>
-                    <a href="prompts.php?action=view&id=<?= h($record['id']) ?>">
-                        <?= h($record['title']) ?>
-                    </a>
-                </td>
-                <td>
-                    <?php if ($record['category'] === 'plain_to_knowledge'): ?>
-                        <span class="badge bg-info">プレーン→ナレッジ</span>
-                    <?php else: ?>
-                        <span class="badge bg-success">ナレッジ→ナレッジ</span>
-                    <?php endif; ?>
-                </td>
-                <td><?= h($record['usage_count']) ?></td>
-                <td><?= h(date('Y/m/d H:i', strtotime($record['created_at']))) ?></td>
-                <td>
-                    <a href="prompts.php?action=edit&id=<?= h($record['id']) ?>"
-                       class="btn btn-sm btn-warning">編集</a>
-                    <a href="prompts.php?action=delete&id=<?= h($record['id']) ?>"
-                       class="btn btn-sm btn-danger"
-                       onclick="return confirm('本当に削除しますか？')">削除</a>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <colgroup>
+                <col style="min-width: 80px; width: 80px;">  <!-- ID列 -->
+                <col style="min-width: 200px; max-width: 300px;">  <!-- タイトル列 -->
+                <col style="min-width: 150px; width: 150px;">  <!-- カテゴリ列 -->
+                <col style="min-width: 100px; width: 100px;">  <!-- 使用回数列 -->
+                <col style="min-width: 120px; width: 120px;">  <!-- 作成日時列 -->
+                <col style="min-width: 160px; width: 160px;">  <!-- 操作列 -->
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>タイトル</th>
+                    <th>カテゴリ</th>
+                    <th class="d-none d-md-table-cell">使用回数</th>
+                    <th class="d-none d-md-table-cell">作成日時</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($records as $record): ?>
+                <tr>
+                    <td><?= h($record['id']) ?></td>
+                    <td class="text-truncate" style="max-width: 300px;" title="<?= h($record['title']) ?>">
+                        <a href="prompts.php?action=view&id=<?= h($record['id']) ?>" class="d-block text-truncate">
+                            <?= h($record['title']) ?>
+                        </a>
+                    </td>
+                    <td>
+                        <?php if ($record['category'] === 'plain_to_knowledge'): ?>
+                            <span class="badge bg-info">プレーン→ナレッジ</span>
+                        <?php else: ?>
+                            <span class="badge bg-success">ナレッジ→ナレッジ</span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="d-none d-md-table-cell"><?= h($record['usage_count']) ?></td>
+                    <td class="d-none d-md-table-cell"><?= h(date('Y/m/d H:i', strtotime($record['created_at']))) ?></td>
+                    <td>
+                        <a href="prompts.php?action=edit&id=<?= h($record['id']) ?>"
+                           class="btn btn-sm btn-warning me-2">編集</a>
+                        <a href="prompts.php?action=delete&id=<?= h($record['id']) ?>"
+                           class="btn btn-sm btn-danger"
+                           onclick="return confirm('本当に削除しますか？')">削除</a>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <style>
+        /* テーブルセルのスタイル */
+        .table td {
+            vertical-align: middle;
+        }
+        
+        /* リンクテキストが省略される場合でもホバー可能に */
+        .text-truncate a {
+            display: block;
+            width: 100%;
+        }
+        
+        /* ツールチップのスタイル */
+        [title] {
+            position: relative;
+            cursor: help;
+        }
+
+        /* スマートフォンでのボタン表示調整 */
+        @media (max-width: 576px) {
+            .btn {
+                display: block;
+                width: 100%;
+                margin-bottom: 0.25rem;
+            }
+            .me-2 {
+                margin-right: 0 !important;
+            }
+        }
+    </style>
 
     <!-- 表示件数選択 -->
     <div class="row mb-3">

@@ -283,7 +283,16 @@ switch ($action) {
         </div>
     </div>
 
-    <table class="table table-striped">
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <colgroup>
+                <col style="min-width: 80px; width: 80px;">  <!-- ID列 -->
+                <col style="min-width: 200px; max-width: 300px;">  <!-- タイトル列 -->
+                <col style="min-width: 200px; max-width: 300px;">  <!-- 親ナレッジ列 -->
+                <col style="min-width: 150px; max-width: 200px;">  <!-- プロンプト列 -->
+                <col style="min-width: 120px; width: 120px;">  <!-- 作成日時列 -->
+                <col style="min-width: 160px; width: 160px;">  <!-- 操作列 -->
+            </colgroup>
         <thead>
             <tr>
                 <th>ID</th>
@@ -298,20 +307,24 @@ switch ($action) {
             <?php foreach ($records as $record): ?>
             <tr>
                 <td><?= h($record['id']) ?></td>
-                <td>
+                <td class="text-truncate" style="max-width: 300px;" title="<?= h($record['title']) ?>">
                     <a href="knowledge.php?action=view&id=<?= h($record['id']) ?>">
                         <?= h($record['title']) ?>
                     </a>
                 </td>
-                <td>
+                <td style="word-break: break-word;">
                     <?php if ($record['parent_type'] === 'record'): ?>
                         <span class="badge bg-info">プレーン</span>
                     <?php else: ?>
                         <span class="badge bg-success">ナレッジ</span>
                     <?php endif; ?>
-                    <?= h($record['parent_title']) ?>
+                    <span style="display: inline-block; max-width: calc(100% - 70px); word-break: break-word;">
+                        <?= h($record['parent_title']) ?>
+                    </span>
                 </td>
-                <td><?= h($record['prompt_title']) ?></td>
+                <td class="text-truncate" style="max-width: 200px;" title="<?= h($record['prompt_title']) ?>">
+                    <?= h($record['prompt_title']) ?>
+                </td>
                 <td><?= h(date('Y/m/d H:i', strtotime($record['created_at']))) ?></td>
                 <td>
                     <a href="knowledge.php?action=edit&id=<?= h($record['id']) ?>&search=<?= h($searchTerm) ?>&group_id=<?= h($groupId) ?>"
@@ -323,7 +336,32 @@ switch ($action) {
             </tr>
             <?php endforeach; ?>
         </tbody>
-    </table>
+        </table>
+    </div>
+    
+    <style>
+        /* テーブルセルのスタイル */
+        .table td {
+            vertical-align: middle;
+        }
+        
+        /* バッジの右マージン */
+        .badge {
+            margin-right: 8px;
+        }
+        
+        /* リンクテキストが省略される場合でもホバー可能に */
+        .text-truncate a {
+            display: block;
+            width: 100%;
+        }
+        
+        /* ツールチップのスタイル */
+        [title] {
+            position: relative;
+            cursor: help;
+        }
+    </style>
 
     <?php if (isset($_GET['group_id']) && $_GET['group_id'] !== ''): ?>
     <div class="text-center mb-4">
