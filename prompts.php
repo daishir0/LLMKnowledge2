@@ -71,7 +71,7 @@ switch ($action) {
                    COUNT(k.id) as usage_count
             FROM prompts p
             LEFT JOIN knowledge k ON p.id = k.prompt_id AND k.deleted = 0
-            WHERE p.id = :id AND p.deleted = 0
+            WHERE p.id = :id
             GROUP BY p.id
         ");
         $stmt->execute([':id' => $id]);
@@ -276,11 +276,9 @@ switch ($action) {
                 <td>
                     <a href="prompts.php?action=edit&id=<?= h($record['id']) ?>"
                        class="btn btn-sm btn-warning">編集</a>
-                    <?php if ($record['usage_count'] == 0): ?>
-                        <a href="prompts.php?action=delete&id=<?= h($record['id']) ?>"
-                           class="btn btn-sm btn-danger"
-                           onclick="return confirm('本当に削除しますか？')">削除</a>
-                    <?php endif; ?>
+                    <a href="prompts.php?action=delete&id=<?= h($record['id']) ?>"
+                       class="btn btn-sm btn-danger"
+                       onclick="return confirm('本当に削除しますか？')">削除</a>
                 </td>
             </tr>
             <?php endforeach; ?>
@@ -388,7 +386,12 @@ switch ($action) {
     
     <div class="card mb-4">
         <div class="card-body">
-            <h5 class="card-title"><?= h($prompt['title']) ?></h5>
+            <h5 class="card-title">
+                <?= h($prompt['title']) ?>
+                <?php if ($prompt['deleted'] == 1): ?>
+                    <span class="text-danger">（削除済み）</span>
+                <?php endif; ?>
+            </h5>
             
             <div class="mb-3">
                 <h6>カテゴリ</h6>
