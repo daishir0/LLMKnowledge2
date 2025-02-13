@@ -12,11 +12,11 @@ $perPage = isset($_GET['per_page']) ? max(10, min(100, intval($_GET['per_page'])
 
 // プロンプト一覧の取得（plain_to_knowledge限定）
 $prompts_stmt = $pdo->query("
-    SELECT id, title, content 
-    FROM prompts 
-    WHERE deleted = 0 
-    AND category = 'plain_to_knowledge' 
-    ORDER BY title
+    SELECT id, title, content
+    FROM prompts
+    WHERE deleted = 0
+    AND category = 'plain_to_knowledge'
+    ORDER BY id ASC
 ");
 $prompts = $prompts_stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -597,7 +597,7 @@ switch ($action) {
                 <option value="<?= h($prompt['id']) ?>" 
                     data-content="<?= h($prompt['content']) ?>"
                     <?= (isset($group) && $group['prompt_id'] == $prompt['id']) ? 'selected' : '' ?>>
-                    <?= h($prompt['title']) ?>
+                    <?= h($prompt['id']) ?>: <?= h($prompt['title']) ?>
                 </option>
                 <?php endforeach; ?>
             </select>

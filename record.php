@@ -496,17 +496,17 @@ switch ($action) {
                             <option value="">選択してください</option>
                             <?php
                             $stmt = $pdo->query("
-                                SELECT id, title, content 
-                                FROM prompts 
-                                WHERE deleted = 0 
+                                SELECT id, title, content
+                                FROM prompts
+                                WHERE deleted = 0
                                 AND category = 'plain_to_knowledge'
-                                ORDER BY title
+                                ORDER BY id ASC
                             ");
                             while ($prompt = $stmt->fetch(PDO::FETCH_ASSOC)):
                             ?>
                                 <option value="<?= h($prompt['id']) ?>" 
                                         data-content="<?= h($prompt['content']) ?>">
-                                    <?= h($prompt['title']) ?>
+                                    <?= h($prompt['id']) ?>: <?= h($prompt['title']) ?>
                                 </option>
                             <?php endwhile; ?>
                         </select>
