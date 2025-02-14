@@ -20,7 +20,3 @@ Thumbs.db
 *.swp
 *.swo
 *~
-
-# バックエンドタスクファイル
-/common/task2knowledge.py
-/common/run_task2knowledge.sh
