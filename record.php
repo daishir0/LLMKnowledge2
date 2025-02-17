@@ -334,7 +334,7 @@ switch ($action) {
                         SELECT id, name
                         FROM groups
                         WHERE deleted = 0
-                        ORDER BY name
+                        ORDER BY id
                     ");
                     while ($group = $groupStmt->fetch(PDO::FETCH_ASSOC)):
                     ?>
@@ -372,7 +372,7 @@ switch ($action) {
                                     SELECT id, name
                                     FROM groups
                                     WHERE deleted = 0
-                                    ORDER BY name
+                                    ORDER BY id
                                 ");
                                 while ($group = $groupStmt->fetch(PDO::FETCH_ASSOC)):
                                 ?>
@@ -964,13 +964,13 @@ switch ($action) {
                     SELECT id, name
                     FROM groups
                     WHERE deleted = 0
-                    ORDER BY name
+                    ORDER BY id
                 ");
                 while ($group = $groupStmt->fetch(PDO::FETCH_ASSOC)):
                 ?>
                     <option value="<?= h($group['id']) ?>"
-                            <?= (isset($record) && $record['group_id'] == $group['id']) ? 'selected' : '' ?>>
-                        <?= h($group['name']) ?>
+                        <?= (isset($record) && $record['group_id'] == $group['id']) ? 'selected' : '' ?>>
+                        <?= h($group['id']) ?>: <?= h($group['name']) ?>
                     </option>
                 <?php endwhile; ?>
             </select>

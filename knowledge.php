@@ -268,7 +268,7 @@ switch ($action) {
                         SELECT id, name
                         FROM groups
                         WHERE deleted = 0
-                        ORDER BY name
+                        ORDER BY id
                     ");
                     while ($group = $groupStmt->fetch(PDO::FETCH_ASSOC)):
                     ?>
