@@ -405,12 +405,30 @@ switch ($action) {
                         if (response.success) {
                             alert('タスク登録が完了しました。');
                         } else {
-                            alert('エラーが発生しました: ' + response.message);
+                            let errorMsg = 'エラーが発生しました: ' + response.message;
+                            if (response.details) {
+                                errorMsg += '\n\n詳細情報:\n';
+                                errorMsg += `エラータイプ: ${response.details.error_type}\n`;
+                                errorMsg += `エラー発生箇所: ${response.details.error_file}:${response.details.error_line}\n`;
+                                if (response.details.group_id) {
+                                    errorMsg += `対象グループID: ${response.details.group_id}`;
+                                }
+                            }
+                            alert(errorMsg);
                             $button.prop('disabled', false);
                         }
                     },
-                    error: function() {
-                        alert('通信エラーが発生しました。');
+                    error: function(xhr) {
+                        let errorMessage = '通信エラーが発生しました。';
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            if (response && response.message) {
+                                errorMessage = response.message;
+                            }
+                        } catch (e) {
+                            console.error('Error parsing response:', e);
+                        }
+                        alert(errorMessage);
                         $button.prop('disabled', false);
                     }
                 });
@@ -437,12 +455,30 @@ switch ($action) {
                         if (response.success) {
                             alert('タスク登録が完了しました。');
                         } else {
-                            alert('エラーが発生しました: ' + response.message);
+                            let errorMsg = 'エラーが発生しました: ' + response.message;
+                            if (response.details) {
+                                errorMsg += '\n\n詳細情報:\n';
+                                errorMsg += `エラータイプ: ${response.details.error_type}\n`;
+                                errorMsg += `エラー発生箇所: ${response.details.error_file}:${response.details.error_line}\n`;
+                                if (response.details.group_id) {
+                                    errorMsg += `対象グループID: ${response.details.group_id}`;
+                                }
+                            }
+                            alert(errorMsg);
                             $button.prop('disabled', false);
                         }
                     },
-                    error: function() {
-                        alert('通信エラーが発生しました。');
+                    error: function(xhr) {
+                        let errorMessage = '通信エラーが発生しました。';
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            if (response && response.message) {
+                                errorMessage = response.message;
+                            }
+                        } catch (e) {
+                            console.error('Error parsing response:', e);
+                        }
+                        alert(errorMessage);
                         $button.prop('disabled', false);
                     }
                 });

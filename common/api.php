@@ -1,7 +1,34 @@
 <?php
+// エラーハンドリングの設定
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
+});
+
+// 予期せぬエラーのハンドリング
+register_shutdown_function(function() {
+    $error = error_get_last();
+    if ($error !== null && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+        http_response_code(500);
+        header('Content-Type: application/json');
+        echo json_encode([
+            'success' => false,
+            'message' => 'Fatal Error: ' . $error['message'],
+            'details' => [
+                'error_type' => 'FatalError',
+                'error_file' => basename($error['file']),
+                'error_line' => $error['line']
+            ]
+        ]);
+        exit;
+    }
+});
+
 require_once 'config.php';
 require_once 'functions.php';
 session_start();
+
+// グローバルなtry-catchでラップ
+try {
 
 // Bearer認証のチェック関数を追加
 function isValidBearerToken() {
@@ -108,12 +135,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         echo json_encode(['success' => true, 'message' => 'タスクが作成されました。']);
                     } catch (PDOException $e) {
                         $pdo->rollBack();
+                        http_response_code(400);
                         header('Content-Type: application/json');
-                        echo json_encode(['success' => false, 'message' => 'データベースエラー: ' . $e->getMessage()]);
+                        echo json_encode([
+                            'success' => false,
+                            'message' => 'データベースエラー: ' . $e->getMessage(),
+                            'details' => [
+                                'error_type' => 'PDOException',
+                                'error_code' => $e->getCode(),
+                                'error_file' => basename($e->getFile()),
+                                'error_line' => $e->getLine()
+                            ]
+                        ]);
                     }
                 } else {
                     header('Content-Type: application/json');
-                    echo json_encode(['success' => false, 'message' => 'プロンプトまたはソースが見つかりません。']);
+                    $errorDetail = '';
+                    if (!$prompt) {
+                        $errorDetail .= "プロンプトID: {$promptId} が見つかりません。";
+                    }
+                    if (!$source) {
+                        $errorDetail .= $errorDetail ? "\n" : "";
+                        $errorDetail .= "ソース {$sourceType}(ID: {$sourceId}) が見つかりません。";
+                    }
+                    echo json_encode(['success' => false, 'message' => "データが見つかりません。\n{$errorDetail}"]);
                 }
             } else {
                 header('Content-Type: application/json');
@@ -148,8 +193,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     header('Content-Type: application/json');
                     echo json_encode(['success' => true, 'message' => 'Record created successfully.']);
                 } catch (PDOException $e) {
+                    http_response_code(400);
                     header('Content-Type: application/json');
-                    echo json_encode(['success' => false, 'message' => 'データベースエラー: ' . $e->getMessage()]);
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'データベースエラー: ' . $e->getMessage(),
+                        'details' => [
+                            'error_type' => get_class($e),
+                            'error_code' => $e->getCode(),
+                            'error_file' => basename($e->getFile()),
+                            'error_line' => $e->getLine()
+                        ]
+                    ]);
                 }
             } else {
                 header('Content-Type: application/json');
@@ -301,7 +356,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $group = $stmt->fetch(PDO::FETCH_ASSOC);
 
                 if (!$group || !$group['prompt_id']) {
-                    throw new Exception('グループまたはプロンプトが見つかりません。');
+                    $errorDetail = '';
+                    if (!$group) {
+                        $errorDetail .= "グループID: {$group_id} が見つかりません。";
+                    } elseif (!$group['prompt_id']) {
+                        $errorDetail .= "グループID: {$group_id} にプロンプトが設定されていません。";
+                    }
+                    throw new Exception("データが見つかりません。\n{$errorDetail}");
                 }
 
                 // 対象のレコードを取得（更新日時条件付き）
@@ -322,7 +383,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $records = $records_stmt->fetchAll(PDO::FETCH_ASSOC);
 
                 if (empty($records)) {
-                    throw new Exception('タスク登録対象のレコードがありません。');
+                    throw new Exception("タスク登録対象のレコードがありません。\nグループID: {$group_id}" .
+                        ($group['task_executed_at'] ? "\n最終実行日時: {$group['task_executed_at']}" : ""));
                 }
 
                 // 既存のナレッジを論理削除（更新日時条件追加）
@@ -414,10 +476,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 // トランザクションロールバック
                 $pdo->rollBack();
 
+                http_response_code(400);
                 header('Content-Type: application/json');
                 echo json_encode([
-                    'success' => false, 
-                    'message' => 'エラーが発生しました: ' . $e->getMessage()
+                    'success' => false,
+                    'message' => 'エラーが発生しました: ' . $e->getMessage(),
+                    'details' => [
+                        'error_type' => get_class($e),
+                        'error_code' => $e->getCode(),
+                        'error_file' => basename($e->getFile()),
+                        'error_line' => $e->getLine(),
+                        'group_id' => $group_id
+                    ]
                 ]);
             }
             break;
@@ -444,10 +514,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
 
             try {
-                // トランザクション開始
-                $pdo->beginTransaction();
-
-                // グループとプロンプト情報の取得
+                // グループとプロンプト情報の取得（トランザクション外で実行）
                 $stmt = $pdo->prepare("
                     SELECT g.id, g.prompt_id, p.content as prompt_content
                     FROM groups g
@@ -458,34 +525,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $group = $stmt->fetch(PDO::FETCH_ASSOC);
 
                 if (!$group || !$group['prompt_id']) {
-                    throw new Exception('グループまたはプロンプトが見つかりません。');
+                    $errorDetail = '';
+                    if (!$group) {
+                        $errorDetail .= "グループID: {$group_id} が見つかりません。";
+                    } elseif (!$group['prompt_id']) {
+                        $errorDetail .= "グループID: {$group_id} にプロンプトが設定されていません。";
+                    }
+                    throw new Exception("データが見つかりません。\n{$errorDetail}");
                 }
 
-                // 対象のレコードを取得（すべてのアクティブなレコード）
-                $records_stmt = $pdo->prepare("
-                    SELECT r.id, r.text, r.reference 
+                // レコード数を確認
+                $count_stmt = $pdo->prepare("
+                    SELECT COUNT(*)
                     FROM record r
-                    WHERE r.group_id = :group_id 
+                    WHERE r.group_id = :group_id
                     AND r.deleted = 0
                 ");
-                $records_stmt->execute([':group_id' => $group_id]);
-                $records = $records_stmt->fetchAll(PDO::FETCH_ASSOC);
+                $count_stmt->execute([':group_id' => $group_id]);
+                $total_records = $count_stmt->fetchColumn();
 
-                if (empty($records)) {
-                    throw new Exception('タスク登録対象のレコードがありません。');
+                if ($total_records === 0) {
+                    throw new Exception("タスク登録対象のレコードがありません。\nグループID: {$group_id}");
                 }
+
+                // プロンプト内容を保持
+                $prompt_content = $group['prompt_content'];
+                $batch_size = 1000; // 1回あたりの処理件数
+                $processed_count = 0;
 
                 // 既存のナレッジを論理削除
                 $delete_knowledge_stmt = $pdo->prepare("
-                    UPDATE knowledge 
+                    UPDATE knowledge
                     SET deleted = 1, updated_at = '$timestamp'
-                    WHERE group_id = :group_id 
+                    WHERE group_id = :group_id
                     AND parent_type = 'record'
                     AND deleted = 0
                 ");
-                $delete_knowledge_stmt->execute([':group_id' => $group_id]);
 
-                // タスクの一括登録
+                // タスク登録用のステートメントを準備
                 $tasks_stmt = $pdo->prepare("
                     INSERT INTO tasks (
                         source_type,
@@ -512,62 +589,128 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     )
                 ");
 
-                // グループのプロンプト内容
-                $prompt_content = $group['prompt_content'];
-
-                // タスク登録処理
-                foreach ($records as $record) {
-                    // referenceがある場合、プロンプト内の{{reference}}を置換
-                    $current_prompt_content = $prompt_content;
-                    if (!empty($record['reference'])) {
-                        $current_prompt_content = str_replace('{{reference}}', $record['reference'], $current_prompt_content);
-                    }
-
-                    $tasks_stmt->bindValue(':source_id', $record['id'], PDO::PARAM_INT);
-                    $tasks_stmt->bindValue(':source_text', $record['text'], PDO::PARAM_STR);
-                    $tasks_stmt->bindValue(':prompt_content', $current_prompt_content, PDO::PARAM_STR);
-                    $tasks_stmt->bindValue(':prompt_id', $group['prompt_id'], PDO::PARAM_INT);
-                    $tasks_stmt->bindValue(':group_id', $group_id, PDO::PARAM_INT);
-                    $tasks_stmt->bindValue(':created_by', $_SESSION['user'], PDO::PARAM_STR);
-                    $tasks_stmt->execute();
-                }
-
-                // グループの最終タスク実行日時を更新
+                // グループの最終タスク実行日時更新用のステートメントを準備
                 $update_group_stmt = $pdo->prepare("
-                    UPDATE groups 
+                    UPDATE groups
                     SET task_executed_at = '$timestamp'
                     WHERE id = :group_id
                 ");
-                $update_group_stmt->execute([':group_id' => $group_id]);
 
-                // トランザクションコミット
-                $pdo->commit();
+                // トランザクション開始
+                $pdo->beginTransaction();
+                try {
+                    // 既存のナレッジを論理削除
+                    $delete_knowledge_stmt->execute([':group_id' => $group_id]);
 
-                header('Content-Type: application/json');
-                echo json_encode([
-                    'success' => true, 
-                    'message' => count($records) . '件のタスクを登録しました。'
-                ]);
+                    // レコードをバッチで処理
+                    for ($offset = 0; $offset < $total_records; $offset += $batch_size) {
+                        $records_stmt = $pdo->prepare("
+                            SELECT r.id, r.text, r.reference
+                            FROM record r
+                            WHERE r.group_id = :group_id
+                            AND r.deleted = 0
+                            LIMIT :limit OFFSET :offset
+                        ");
+                        $records_stmt->bindValue(':group_id', $group_id, PDO::PARAM_INT);
+                        $records_stmt->bindValue(':limit', $batch_size, PDO::PARAM_INT);
+                        $records_stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+                        $records_stmt->execute();
 
+                        while ($record = $records_stmt->fetch(PDO::FETCH_ASSOC)) {
+                            $current_prompt_content = $prompt_content;
+                            if (!empty($record['reference'])) {
+                                $current_prompt_content = str_replace('{{reference}}', $record['reference'], $current_prompt_content);
+                            }
+
+                            $tasks_stmt->bindValue(':source_id', $record['id'], PDO::PARAM_INT);
+                            $tasks_stmt->bindValue(':source_text', $record['text'], PDO::PARAM_STR);
+                            $tasks_stmt->bindValue(':prompt_content', $current_prompt_content, PDO::PARAM_STR);
+                            $tasks_stmt->bindValue(':prompt_id', $group['prompt_id'], PDO::PARAM_INT);
+                            $tasks_stmt->bindValue(':group_id', $group_id, PDO::PARAM_INT);
+                            $tasks_stmt->bindValue(':created_by', $_SESSION['user'], PDO::PARAM_STR);
+                            $tasks_stmt->execute();
+                            $processed_count++;
+                        }
+
+                        // メモリ解放
+                        unset($records_stmt);
+                        gc_collect_cycles();
+                    }
+
+                    // グループの最終タスク実行日時を更新
+                    $update_group_stmt->execute([':group_id' => $group_id]);
+
+                    // すべての処理が成功したらコミット
+                    $pdo->commit();
+
+                    header('Content-Type: application/json');
+                    echo json_encode([
+                        'success' => true,
+                        'message' => $processed_count . '件のタスクを登録しました。'
+                    ]);
+                } catch (Exception $e) {
+                    // トランザクションロールバック
+                    if ($pdo->inTransaction()) {
+                        $pdo->rollBack();
+                    }
+
+                    http_response_code(400);
+                    header('Content-Type: application/json');
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'エラーが発生しました: ' . $e->getMessage(),
+                        'details' => [
+                            'error_type' => get_class($e),
+                            'error_code' => $e->getCode(),
+                            'error_file' => basename($e->getFile()),
+                            'error_line' => $e->getLine(),
+                            'group_id' => $group_id
+                        ]
+                    ]);
+                }
             } catch (Exception $e) {
-                // トランザクションロールバック
-                $pdo->rollBack();
-
+                http_response_code(400);
                 header('Content-Type: application/json');
                 echo json_encode([
-                    'success' => false, 
-                    'message' => 'エラーが発生しました: ' . $e->getMessage()
+                    'success' => false,
+                    'message' => 'エラーが発生しました: ' . $e->getMessage(),
+                    'details' => [
+                        'error_type' => get_class($e),
+                        'error_code' => $e->getCode(),
+                        'error_file' => basename($e->getFile()),
+                        'error_line' => $e->getLine(),
+                        'group_id' => $group_id
+                    ]
                 ]);
             }
             break;
-
-        default:
-            header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'message' => '不正なアクションです。']);
-            break;
+    
+            default:
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => '不正なアクションです。']);
+                break;
+        }
+    } else {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => '不正なリクエストです。']);
     }
-} else {
+} catch (Throwable $e) {
+    // 予期せぬエラーのハンドリング
+    if (isset($pdo) && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    
+    http_response_code(500);
     header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => '不正なリクエストです。']);
+    echo json_encode([
+        'success' => false,
+        'message' => '予期せぬエラーが発生しました: ' . $e->getMessage(),
+        'details' => [
+            'error_type' => get_class($e),
+            'error_code' => $e->getCode(),
+            'error_file' => basename($e->getFile()),
+            'error_line' => $e->getLine()
+        ]
+    ]);
 }
 ?>
