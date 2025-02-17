@@ -49,14 +49,30 @@ switch ($action) {
 
                 // recordテーブルに保存
                 $stmt = $pdo->prepare("
-                    INSERT INTO record (title, text, reference, created_by, created_at, updated_at)
-                    VALUES (:title, :text, :reference, :created_by, '$timestamp', '$timestamp')
+                    INSERT INTO record (
+                        title,
+                        text,
+                        reference,
+                        group_id,
+                        created_by,
+                        created_at,
+                        updated_at
+                    ) VALUES (
+                        :title,
+                        :text,
+                        :reference,
+                        :group_id,
+                        :created_by,
+                        '$timestamp',
+                        '$timestamp'
+                    )
                 ");
                 
                 $data = [
                     'title' => $_FILES['file']['name'],
                     'text' => $result['markdown'],
                     'reference' => $_POST['reference'] ?? '',
+                    'group_id' => !empty($_POST['group_id']) ? $_POST['group_id'] : null,
                     'created_by' => $_SESSION['user']
                 ];
                 
@@ -76,9 +92,13 @@ switch ($action) {
 
                     $pdo->commit();
 
-                    // 成功メッセージをセット
-                    $_SESSION['success_message'] = 'ファイルが正常にアップロードされ、変換されました。';
-                    redirect('record.php?action=view&id=' . $id);
+                    ob_clean(); // 出力バッファをクリア
+                    header('Content-Type: application/json; charset=utf-8');
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'ファイルが正常にアップロードされ、変換されました。',
+                        'id' => $id
+                    ]);
                 } catch (Exception $e) {
                     $pdo->rollBack();
                     throw $e;
@@ -86,12 +106,24 @@ switch ($action) {
 
             } catch (Exception $e) {
                 error_log('Error in file upload: ' . $e->getMessage() . "\n" . $e->getTraceAsString(), 3, './common/logs.txt');
-                // エラーメッセージをセット
-                $_SESSION['error_message'] = 'エラーが発生しました: ' . $e->getMessage();
-                redirect('record.php?action=list');
+                ob_clean(); // 出力バッファをクリア
+                header('Content-Type: application/json; charset=utf-8');
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'エラーが発生しました: ' . $e->getMessage()
+                ]);
             }
+        } else {
+            ob_clean(); // 出力バッファをクリア
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code(400);
+            echo json_encode([
+                'success' => false,
+                'message' => '不正なリクエストです。'
+            ]);
         }
-        break;
+        exit;
 
     case 'list':
         $groupId = $_GET['group_id'] ?? '';
@@ -330,25 +362,222 @@ switch ($action) {
                         <h5 class="modal-title" id="uploadModalLabel">ファイルアップロード</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <form action="record.php?action=upload" method="post" enctype="multipart/form-data">
-                        <div class="modal-body">
-                            <div class="mb-3">
-                                <label for="file" class="form-label">ファイル選択</label>
-                                <input type="file" class="form-control" id="file" name="file" required>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="upload_group" class="form-label">登録先グループ</label>
+                            <select class="form-select" id="upload_group">
+                                <option value="">グループ指定なし</option>
+                                <?php
+                                $groupStmt = $pdo->query("
+                                    SELECT id, name
+                                    FROM groups
+                                    WHERE deleted = 0
+                                    ORDER BY name
+                                ");
+                                while ($group = $groupStmt->fetch(PDO::FETCH_ASSOC)):
+                                ?>
+                                    <option value="<?= h($group['id']) ?>">
+                                        <?= h($group['id']) ?>: <?= h($group['name']) ?>
+                                    </option>
+                                <?php endwhile; ?>
+                            </select>
+                        </div>
+                        <div id="dropZone" class="border rounded p-4 text-center mb-3" style="min-height: 150px;">
+                            <div id="uploadArea">
+                                <p class="mb-2">ここにファイルをドロップすると変換処理を開始します</p>
+                                <p class="text-muted small">または</p>
+                                <input type="file" id="fileInput" multiple class="d-none">
+                                <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('fileInput').click()">
+                                    ファイルを選択
+                                </button>
                             </div>
-                            <div class="mb-3">
-                                <label for="upload_reference" class="form-label">Reference</label>
-                                <input type="text" class="form-control" id="upload_reference" name="reference">
+                            <div id="uploadProgress" class="d-none w-100">
+                                <h6 class="mb-3">アップロード状況</h6>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <div id="uploadStatus" class="small text-muted"></div>
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                            <button type="submit" class="btn btn-primary">アップロード</button>
+                        <div class="mb-3">
+                            <label for="upload_reference" class="form-label">Reference</label>
+                            <input type="text" class="form-control" id="upload_reference">
                         </div>
-                    </form>
+                        <div id="uploadProgress" class="d-none">
+                            <h6>アップロード状況</h6>
+                            <div class="progress mb-2">
+                                <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <div id="uploadStatus" class="small text-muted"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                        <button type="button" class="btn btn-warning" id="taskRegisterBtn" disabled>タスク登録</button>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropZone = document.getElementById('dropZone');
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const taskRegisterBtn = document.getElementById('taskRegisterBtn');
+            const uploadProgress = document.getElementById('uploadProgress');
+            const progressBar = uploadProgress.querySelector('.progress-bar');
+            const uploadStatus = document.getElementById('uploadStatus');
+            const uploadGroup = document.getElementById('upload_group');
+            let isUploading = false;
+            let hasSuccessfulUpload = false;
+
+            // グループ選択の監視
+            uploadGroup.addEventListener('change', updateTaskRegisterButton);
+
+            function updateTaskRegisterButton() {
+                const groupSelected = uploadGroup.value !== '';
+                taskRegisterBtn.disabled = !hasSuccessfulUpload || !groupSelected;
+            }
+
+            // ドラッグ&ドロップイベントの設定
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('border-primary');
+            });
+
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-primary');
+            });
+
+            dropZone.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('border-primary');
+                
+                if (isUploading) return;
+                
+                const files = Array.from(e.dataTransfer.files);
+                if (files.length > 0) {
+                    await processFiles(files);
+                }
+            });
+
+            fileInput.addEventListener('change', async (e) => {
+                if (isUploading) return;
+                
+                const files = Array.from(e.target.files);
+                if (files.length > 0) {
+                    await processFiles(files);
+                }
+            });
+
+            async function processFiles(files) {
+                isUploading = true;
+                uploadArea.classList.add('d-none');
+                uploadProgress.classList.remove('d-none');
+                let successCount = 0;
+                let failCount = 0;
+                let errors = [];
+
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('reference', document.getElementById('upload_reference').value);
+                    formData.append('group_id', document.getElementById('upload_group').value);
+
+                    progressBar.style.width = `${(i / files.length) * 100}%`;
+                    uploadStatus.innerHTML = `
+                        <div class="mb-2">処理中: ${file.name} (${i + 1}/${files.length})</div>
+                        ${errors.map(err => `<div class="text-danger small">${err}</div>`).join('')}
+                    `;
+
+                    try {
+                        const response = await fetch('record.php?action=upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        let result;
+                        try {
+                            result = await response.json();
+                        } catch (e) {
+                            throw new Error('サーバーからの応答が不正です');
+                        }
+
+                        if (response.ok && result.success) {
+                            successCount++;
+                        } else {
+                            failCount++;
+                            errors.push(`${file.name}: ${result.message || 'エラーが発生しました'}`);
+                        }
+                    } catch (error) {
+                        failCount++;
+                        errors.push(`${file.name}: ${error.message || '通信エラーが発生しました'}`);
+                        console.error(`Error uploading ${file.name}:`, error);
+                    }
+                }
+
+                progressBar.style.width = '100%';
+                
+                // 結果表示の構築
+                let statusHtml = `<div class="mb-2">完了: 成功 ${successCount}件, 失敗 ${failCount}件</div>`;
+                if (errors.length > 0) {
+                    statusHtml += '<div class="mt-2"><strong>エラー詳細:</strong></div>';
+                    statusHtml += errors.map(err => `<div class="text-danger small">${err}</div>`).join('');
+                }
+                uploadStatus.innerHTML = statusHtml;
+                
+                // 成功したアップロードがある場合はフラグを立てる（エラーの有無に関わらず）
+                if (successCount > 0) {
+                    hasSuccessfulUpload = true;
+                    updateTaskRegisterButton();
+                }
+                
+                // 処理完了後の状態設定
+                uploadArea.classList.remove('d-none');
+                progressBar.style.width = '0%';
+                isUploading = false;
+                fileInput.value = '';
+            }
+
+            taskRegisterBtn.addEventListener('click', async function() {
+                const groupId = document.getElementById('upload_group').value;
+                if (!groupId) {
+                    alert('タスク登録にはグループの指定が必要です。');
+                    return;
+                }
+
+                taskRegisterBtn.disabled = true;
+                
+                try {
+                    const response = await fetch('common/api.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: new URLSearchParams({
+                            'action': 'bulk_task_register_by_group',
+                            'group_id': groupId
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    if (result.success) {
+                        alert(result.message);
+                        location.reload();
+                    } else {
+                        alert('エラーが発生しました: ' + result.message);
+                        taskRegisterBtn.disabled = false;
+                    }
+                } catch (error) {
+                    alert('通信エラーが発生しました。');
+                    taskRegisterBtn.disabled = false;
+                }
+            });
+        });
+        </script>
     </div>
 
     <div class="table-responsive">
