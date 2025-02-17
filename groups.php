@@ -501,7 +501,9 @@ switch ($action) {
                     <div class="card bg-primary text-white">
                         <div class="card-body">
                             <h6 class="card-title">プレーンナレッジ数</h6>
-                            <p class="card-text display-6"><?= h($group['record_count']) ?></p>
+                            <a href="record.php?action=list&search=&group_id=<?= h($group['id']) ?>" class="text-white text-decoration-none">
+                                <p class="card-text display-6"><?= h($group['record_count']) ?></p>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -509,7 +511,9 @@ switch ($action) {
                     <div class="card bg-success text-white">
                         <div class="card-body">
                             <h6 class="card-title">ナレッジ数</h6>
-                            <p class="card-text display-6"><?= h($group['knowledge_count']) ?></p>
+                            <a href="knowledge.php?action=list&search=&group_id=<?= h($group['id']) ?>" class="text-white text-decoration-none">
+                                <p class="card-text display-6"><?= h($group['knowledge_count']) ?></p>
+                            </a>
                         </div>
                     </div>
                 </div>

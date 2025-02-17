@@ -49,7 +49,9 @@ if ($tasksTableExists) {
         <div class="card bg-primary text-white">
             <div class="card-body">
                 <h5 class="card-title">プレーンナレッジ</h5>
-                <p class="card-text display-4"><?= h($plainCount) ?></p>
+                <a href="record.php?action=list" class="text-white text-decoration-none">
+                    <p class="card-text display-4"><?= h($plainCount) ?></p>
+                </a>
                 <p class="card-text">登録件数</p>
             </div>
         </div>
@@ -58,7 +60,9 @@ if ($tasksTableExists) {
         <div class="card bg-success text-white">
             <div class="card-body">
                 <h5 class="card-title">ナレッジ</h5>
-                <p class="card-text display-4"><?= h($knowledgeCount) ?></p>
+                <a href="knowledge.php?action=list" class="text-white text-decoration-none">
+                    <p class="card-text display-4"><?= h($knowledgeCount) ?></p>
+                </a>
                 <p class="card-text">登録件数</p>
             </div>
         </div>
@@ -67,7 +71,9 @@ if ($tasksTableExists) {
         <div class="card bg-info text-white">
             <div class="card-body">
                 <h5 class="card-title">プロンプト</h5>
-                <p class="card-text display-4"><?= h($promptCount) ?></p>
+                <a href="prompts.php?action=list" class="text-white text-decoration-none">
+                    <p class="card-text display-4"><?= h($promptCount) ?></p>
+                </a>
                 <p class="card-text">登録件数</p>
             </div>
         </div>
@@ -76,7 +82,9 @@ if ($tasksTableExists) {
         <div class="card bg-warning text-white">
             <div class="card-body">
                 <h5 class="card-title">残タスク</h5>
-                <p class="card-text display-4"><?= h($taskStats['pending'] ?? 0) ?></p>
+                <a href="tasks.php" class="text-white text-decoration-none">
+                    <p class="card-text display-4"><?= h($taskStats['pending'] ?? 0) ?></p>
+                </a>
                 <p class="card-text">未処理タスク数</p>
             </div>
         </div>
