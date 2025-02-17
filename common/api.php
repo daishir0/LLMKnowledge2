@@ -212,6 +212,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
             break;
 
+        case 'create_record_with_group':
+            if (!isAuthenticated()) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => '認証が必要です。']);
+                exit;
+            }
+
+            $title = $_POST['title'] ?? '';
+            $text = $_POST['text'] ?? '';
+            $reference = $_POST['reference'] ?? '';
+            $group_id = $_POST['group_id'] ?? null;
+
+            if (!$title || !$text) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'タイトルと内容が必要です。']);
+                exit;
+            }
+
+            try {
+                // group_idが指定されている場合のみ、グループの存在確認を行う
+                if ($group_id !== null) {
+                    $group_stmt = $pdo->prepare("
+                        SELECT id 
+                        FROM groups 
+                        WHERE id = :group_id 
+                        AND deleted = 0
+                    ");
+                    $group_stmt->execute([':group_id' => $group_id]);
+                    
+                    if (!$group_stmt->fetch()) {
+                        header('Content-Type: application/json');
+                        echo json_encode(['success' => false, 'message' => '指定されたグループが存在しません。']);
+                        exit;
+                    }
+                }
+
+                // レコードの作成
+                $stmt = $pdo->prepare("
+                    INSERT INTO record (
+                        title,
+                        text,
+                        reference,
+                        group_id,
+                        created_at,
+                        updated_at
+                    ) VALUES (
+                        :title,
+                        :text,
+                        :reference,
+                        :group_id,
+                        '$timestamp',
+                        '$timestamp'
+                    )
+                ");
+                
+                $stmt->execute([
+                    ':title' => $title,
+                    ':text' => $text,
+                    ':reference' => $reference,
+                    ':group_id' => $group_id
+                ]);
+
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => true, 
+                    'message' => $group_id ? 'グループ付きレコードが作成されました。' : 'レコードが作成されました。'
+                ]);
+
+            } catch (PDOException $e) {
+                http_response_code(400);
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'データベースエラー: ' . $e->getMessage(),
+                    'details' => [
+                        'error_type' => get_class($e),
+                        'error_code' => $e->getCode(),
+                        'error_file' => basename($e->getFile()),
+                        'error_line' => $e->getLine()
+                    ]
+                ]);
+            }
+            break;
+
         case 'delete_records':
             if (!isAuthenticated()) {
                 header('Content-Type: application/json');
