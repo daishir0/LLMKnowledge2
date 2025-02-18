@@ -653,6 +653,14 @@ switch ($action) {
         }
     </style>
 
+    <?php if (isset($_GET['group_id']) && $_GET['group_id'] !== ''): ?>
+    <div class="text-center mb-4">
+        <button id="exportGroupButton" class="btn btn-success" data-group-id="<?= h($_GET['group_id']) ?>">
+            このグループのプレーンナレッジを全てエクスポートする
+        </button>
+    </div>
+    <?php endif; ?>
+
     <!-- 表示件数選択 -->
     <div class="row mb-3">
         <div class="col-auto">
@@ -724,6 +732,40 @@ switch ($action) {
         </form>
     </div>
     <?php endif; ?>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        // グループエクスポート機能
+        $('#exportGroupButton').click(function(e) {
+            e.preventDefault();
+            const groupId = $(this).data('group-id');
+            
+            fetch(`common/export_group_plain_knowledge.php?group_id=${groupId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.message || '不明なエラーが発生しました');
+                        });
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `plain_group_${groupId}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                })
+                .catch(error => {
+                    alert(error.message);
+                });
+        });
+    });
+    </script>
 
 <!-- 詳細表示画面 -->
 <?php elseif ($action === 'view'): ?>
