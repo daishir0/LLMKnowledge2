@@ -249,6 +249,10 @@ switch ($action) {
                         <a href="groups.php?action=edit&id=<?= h($group['id']) ?>"
                            class="btn btn-sm btn-warning">編集</a>
                         <button type="button"
+                                class="btn btn-sm btn-warning duplicate-group"
+                                data-group-id="<?= h($group['id']) ?>"
+                                data-group-name="<?= h($group['name']) ?>">複製</button>
+                        <button type="button"
                                 class="btn btn-sm btn-warning bulk-task-register"
                                 data-group-id="<?= h($group['id']) ?>"
                                 data-group-name="<?= h($group['name']) ?>">
@@ -385,6 +389,58 @@ switch ($action) {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
     $(document).ready(function() {
+        // グループ複製機能
+        $('.duplicate-group').click(function() {
+            const $button = $(this);
+            const groupId = $button.data('group-id');
+            const groupName = $button.data('group-name');
+
+            if (confirm(`「${groupName}」グループを複製しますか？\nグループと関連するプレーンナレッジが複製されます。`)) {
+                $button.prop('disabled', true);
+
+                $.ajax({
+                    url: 'common/api.php',
+                    method: 'POST',
+                    data: {
+                        action: 'duplicate_group',
+                        group_id: groupId
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.success) {
+                            alert('グループを複製しました。');
+                            location.reload();
+                        } else {
+                            let errorMsg = 'エラーが発生しました: ' + response.message;
+                            if (response.details) {
+                                errorMsg += '\n\n詳細情報:\n';
+                                errorMsg += `エラータイプ: ${response.details.error_type}\n`;
+                                errorMsg += `エラー発生箇所: ${response.details.error_file}:${response.details.error_line}\n`;
+                                if (response.details.group_id) {
+                                    errorMsg += `対象グループID: ${response.details.group_id}`;
+                                }
+                            }
+                            alert(errorMsg);
+                            $button.prop('disabled', false);
+                        }
+                    },
+                    error: function(xhr) {
+                        let errorMessage = '通信エラーが発生しました。';
+                        try {
+                            const response = JSON.parse(xhr.responseText);
+                            if (response && response.message) {
+                                errorMessage = response.message;
+                            }
+                        } catch (e) {
+                            console.error('Error parsing response:', e);
+                        }
+                        alert(errorMessage);
+                        $button.prop('disabled', false);
+                    }
+                });
+            }
+        });
+
         $('.bulk-task-register').click(function() {
             const $button = $(this);
             const groupId = $button.data('group-id');

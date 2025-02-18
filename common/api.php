@@ -768,6 +768,130 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 ]);
             }
             break;
+
+        case 'duplicate_group':
+            if (!isAuthenticated()) {
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => false,
+                    'message' => '認証が必要です。'
+                ]);
+                exit;
+            }
+
+            // グループIDの取得
+            $group_id = $_POST['group_id'] ?? null;
+            if (!$group_id) {
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'グループIDが指定されていません。'
+                ]);
+                exit;
+            }
+
+            try {
+                // トランザクション開始
+                $pdo->beginTransaction();
+
+                // 元のグループ情報を取得
+                $stmt = $pdo->prepare("
+                    SELECT * FROM groups
+                    WHERE id = :group_id
+                    AND deleted = 0
+                ");
+                $stmt->execute([':group_id' => $group_id]);
+                $original_group = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$original_group) {
+                    throw new Exception("グループが見つかりません。\nグループID: {$group_id}");
+                }
+
+                // グループを複製
+                $stmt = $pdo->prepare("
+                    INSERT INTO groups (
+                        name,
+                        detail,
+                        prompt_id,
+                        created_at,
+                        updated_at
+                    ) VALUES (
+                        :name,
+                        :detail,
+                        :prompt_id,
+                        '$timestamp',
+                        '$timestamp'
+                    )
+                ");
+                
+                $stmt->execute([
+                    ':name' => $original_group['name'] . ' (copy)',
+                    ':detail' => $original_group['detail'],
+                    ':prompt_id' => $original_group['prompt_id']
+                ]);
+
+                $new_group_id = $pdo->lastInsertId();
+
+                // 関連するプレーンナレッジを複製
+                $stmt = $pdo->prepare("
+                    INSERT INTO record (
+                        title,
+                        text,
+                        reference,
+                        group_id,
+                        created_by,
+                        created_at,
+                        updated_at
+                    )
+                    SELECT
+                        title,
+                        text,
+                        reference,
+                        :new_group_id,
+                        :created_by,
+                        '$timestamp',
+                        '$timestamp'
+                    FROM record
+                    WHERE group_id = :original_group_id
+                    AND deleted = 0
+                ");
+
+                $stmt->execute([
+                    ':new_group_id' => $new_group_id,
+                    ':created_by' => $_SESSION['user'],
+                    ':original_group_id' => $group_id
+                ]);
+
+                // トランザクションコミット
+                $pdo->commit();
+
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'グループを複製しました。'
+                ]);
+
+            } catch (Exception $e) {
+                // トランザクションロールバック
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+
+                http_response_code(400);
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'エラーが発生しました: ' . $e->getMessage(),
+                    'details' => [
+                        'error_type' => get_class($e),
+                        'error_code' => $e->getCode(),
+                        'error_file' => basename($e->getFile()),
+                        'error_line' => $e->getLine(),
+                        'group_id' => $group_id
+                    ]
+                ]);
+            }
+            break;
     
             default:
                 header('Content-Type: application/json');
