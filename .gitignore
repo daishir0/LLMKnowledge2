@@ -1,22 +1,32 @@
-# データベースファイル
-*.db
-knowledge.db
+# Composer
+/vendor/
+composer.lock
 
-# 設定ファイル
-/common/config.php
-files.txt
-
-# ログファイル
-/common/logs.txt
-
-# キャッシュファイル
+# PHP
+.env
+*.log
 *.cache
 
-# OSが生成するファイル
+# IDE
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# エディタの一時ファイル
-*.swp
-*.swo
-*~
+# Application specific
+/common/config.php
+/*.db
+*.xlsx
+/tmp/
+/logs/
+/common/logs.txt
+/common/gomi
