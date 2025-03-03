@@ -9,6 +9,8 @@ Key features:
 - Import/Export functionality
 - User authentication
 - Responsive web interface
+- Group-based knowledge organization
+- Knowledge matrix export (Excel format)
 
 ## Installation
 1. Clone the repository:
@@ -26,26 +28,30 @@ cd LLMKnowledge2
 cp common/config.sample.php common/config.php
 ```
 
-4. Edit the configuration file (`common/config.php`):
+4. Install PHP dependencies:
+```bash
+composer install
+```
+
+5. Edit the configuration file (`common/config.php`):
 - Set your OpenAI API key
 - Set your Anthropic Claude API key
 - Configure the admin username and password
 - Adjust the base URL if needed
 
-5. Set up the SQLite database:
+6. Set up the SQLite database:
 ```bash
 touch knowledge.db
 chmod 666 knowledge.db
 ```
 
-6. Set up the SQLite database:
+7. Initialize the database:
 ```bash
-# Initialize the database file
 python initialize_database.py
 chmod 666 knowledge.db
 ```
 
-7. Configure your web server:
+8. Configure your web server:
 - Point the web server to the project directory
 - Add security rules to prevent direct access to knowledge.db
   ```apache
@@ -64,6 +70,19 @@ chmod 666 knowledge.db
    - Create and manage prompt templates
    - Import/export data
    - Track version history
+   - Organize knowledge entries into groups
+   - Export knowledge matrix in Excel format:
+     * Combine knowledge from multiple groups
+     * View knowledge in a 2D matrix (PDF titles × prompts)
+     * Easy export with comma-separated group IDs
+
+## Requirements
+- PHP 7.4 or later
+- Composer
+- PHP extensions:
+  * SQLite support
+  * zip (for Excel export)
+  * gd (for image processing)
 
 ## Notes
 - **IMPORTANT**: Protect knowledge.db from external access
@@ -73,8 +92,6 @@ chmod 666 knowledge.db
 - Ensure proper file permissions for the SQLite database file
 - Keep your API keys secure
 - Regularly backup your database
-- The system requires PHP 7.4 or later
-- Configure PHP with SQLite support
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.
@@ -93,6 +110,8 @@ LLMKnowledge2は、大規模言語モデル（LLM）を活用してナレッジ�
 - インポート/エクスポート機能
 - ユーザー認証
 - レスポンシブWebインターフェース
+- グループベースのナレッジ管理
+- ナレッジマトリックス出力（Excel形式）
 
 ## インストール方法
 1. レポジトリをクローンします：
@@ -110,26 +129,30 @@ cd LLMKnowledge2
 cp common/config.sample.php common/config.php
 ```
 
-4. 設定ファイル（`common/config.php`）を編集：
+4. PHP依存パッケージのインストール：
+```bash
+composer install
+```
+
+5. 設定ファイル（`common/config.php`）を編集：
 - OpenAI APIキーを設定
 - Anthropic Claude APIキーを設定
 - 管理者ユーザー名とパスワードを設定
 - 必要に応じてベースURLを調整
 
-5. SQLiteデータベースのセットアップ：
+6. SQLiteデータベースのセットアップ：
 ```bash
 touch knowledge.db
 chmod 666 knowledge.db
 ```
 
-6. SQLiteデータベースの初期化:
+7. データベースの初期化：
 ```bash
-# データベースの初期化スクリプト
 python initialize_database.py
 chmod 666 knowledge.db
 ```
 
-7. Webサーバーの設定：
+8. Webサーバーの設定：
 - プロジェクトディレクトリにWebサーバーを向ける
 - knowledge.dbへの直接アクセスを防ぐためのセキュリティルールを追加
   ```apache
@@ -148,6 +171,19 @@ chmod 666 knowledge.db
    - プロンプトテンプレートの作成と管理
    - データのインポート/エクスポート
    - バージョン履歴の確認
+   - グループによるナレッジの整理
+   - ナレッジマトリックスのExcel出力：
+     * 複数グループのナレッジを1つのファイルに統合
+     * PDFタイトル×プロンプトの2次元マトリックス形式
+     * カンマ区切りでグループIDを指定して簡単出力
+
+## システム要件
+- PHP 7.4以降
+- Composer
+- PHP拡張機能：
+  * SQLiteサポート
+  * zip（Excel出力用）
+  * gd（画像処理用）
 
 ## 注意点
 - **重要**: knowledge.dbへの外部アクセスからの保護
@@ -157,8 +193,6 @@ chmod 666 knowledge.db
 - SQLiteデータベースファイルの適切なファイル権限を確保すること
 - APIキーは安全に管理すること
 - 定期的にデータベースをバックアップすること
-- PHP 7.4以降が必要
-- PHPにSQLiteサポートが必要
 
 ## ライセンス
 このプロジェクトはMITライセンスの下でライセンスされています。詳細はLICENSEファイルを参照してください。
