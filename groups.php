@@ -228,6 +228,10 @@ switch ($action) {
                                    title="カンマ区切りの数字のみ入力可能です">
                             <div class="form-text">カンマ(,)区切りでナレッジマトリックス出力したいグループIDを記載してください</div>
                         </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="includePlainKnowledge">
+                            <label class="form-check-label" for="includePlainKnowledge">プレーンナレッジを加える</label>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="submit" class="btn btn-primary" id="exportMatrix">出力</button>
@@ -263,12 +267,21 @@ switch ($action) {
             form.action = 'common/export_matrix.php';
             form.target = '_blank'; // 新しいウィンドウで開く
             
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'group_ids';
-            input.value = groupIds;
+            // グループIDの入力
+            const groupIdsInput = document.createElement('input');
+            groupIdsInput.type = 'hidden';
+            groupIdsInput.name = 'group_ids';
+            groupIdsInput.value = groupIds;
+            form.appendChild(groupIdsInput);
             
-            form.appendChild(input);
+            // プレーンナレッジを加えるかどうかのチェック状態
+            const includePlainKnowledge = $('#includePlainKnowledge').prop('checked');
+            const includePlainKnowledgeInput = document.createElement('input');
+            includePlainKnowledgeInput.type = 'hidden';
+            includePlainKnowledgeInput.name = 'include_plain_knowledge';
+            includePlainKnowledgeInput.value = includePlainKnowledge ? '1' : '0';
+            form.appendChild(includePlainKnowledgeInput);
+            
             document.body.appendChild(form);
             form.submit();
             document.body.removeChild(form);

@@ -3,7 +3,7 @@
 Knowledge Matrix出力プログラム
 
 指定されたグループIDのknowledgeレコードを2次元マトリックス形式でExcelファイルに出力します。
-PDFタイトルを縦軸、プロンプトを横軸として、knowledgeの内容をセルに配置します。
+IDを縦軸、プロンプトを横軸として、knowledgeの内容をセルに配置します。
 
 使用方法:
     python3 export_knowledge_matrix.py GROUP_ID [GROUP_ID ...]
@@ -14,7 +14,7 @@ PDFタイトルを縦軸、プロンプトを横軸として、knowledgeの内�
 出力:
     - ファイル名: knowledge_matrix.xlsx
     - フォーマット:
-        - 縦軸: PDFタイトル
+        - 縦軸: ID
         - 横軸: プロンプト（prompt_idの順序で並び替え）
         - セル: knowledgeの内容
     - スタイル:

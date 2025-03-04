@@ -74,6 +74,29 @@ try {
         ];
     }
 
+    // プレーンナレッジを加えるかどうかのフラグ
+    $include_plain_knowledge = isset($_POST['include_plain_knowledge']) && $_POST['include_plain_knowledge'] === '1';
+    
+    // プレーンナレッジを加える場合のみ、recordテーブルのtextを取得
+    $record_texts = [];
+    if ($include_plain_knowledge) {
+        // 最初のグループIDを取得
+        $first_group_id = $group_ids[0];
+        
+        // 最初のグループIDに関連するrecordのtextを取得
+        $record_text_query = "
+            SELECT r.title, r.text
+            FROM record r
+            WHERE r.group_id = :first_group_id
+            AND r.deleted = 0
+        ";
+        $stmt = $pdo->prepare($record_text_query);
+        $stmt->execute([':first_group_id' => $first_group_id]);
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $record_texts[$row['title']] = $row['text'];
+        }
+    }
+
     // 次に、ユニークなrecordを取得（タイトルでグループ化）
     $records_query = "
         SELECT DISTINCT r.id, r.title
@@ -132,7 +155,7 @@ try {
     $sheet = $spreadsheet->getActiveSheet();
 
     // ヘッダー行の作成
-    $sheet->setCellValue('A1', 'PDFタイトル');
+    $sheet->setCellValue('A1', 'ID');
     $col = 'B';
     foreach ($groups as $group) {
         $group_id = $group['id'];
@@ -142,6 +165,11 @@ try {
         $prompt_title = implode(', ', $prompt_titles);
         $sheet->setCellValue($col . '1', $prompt_title);
         $col++;
+    }
+    
+    // プレーンナレッジを加える場合のみ、元テキスト列のヘッダーを追加
+    if ($include_plain_knowledge) {
+        $sheet->setCellValue($col . '1', '元テキスト');
     }
 
     // データの配置
@@ -164,11 +192,22 @@ try {
             $sheet->setCellValue($col . $row, $value);
             $col++;
         }
+        
+        // プレーンナレッジを加える場合のみ、元テキスト列にデータを追加
+        if ($include_plain_knowledge) {
+            $text_value = isset($record_texts[$title]) ? $record_texts[$title] : '';
+            $sheet->setCellValue($col . $row, $text_value);
+        }
+        
         $row++;
     }
 
     // スタイルの設定
-    $lastCol = chr(ord('A') + count($groups));
+    if ($include_plain_knowledge) {
+        $lastCol = chr(ord('A') + count($groups) + 1); // +1 for 元テキスト列
+    } else {
+        $lastCol = chr(ord('A') + count($groups));
+    }
     $lastRow = $row - 1;
 
     // ヘッダー行のスタイル（中央揃え）
