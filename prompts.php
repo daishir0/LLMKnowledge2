@@ -212,10 +212,74 @@ switch ($action) {
         }
         break;
 
+    case 'duplicate':
+        if (isset($_GET['id'])) {
+            try {
+                $pdo->beginTransaction();
+                
+                // 元のプロンプトを取得
+                $stmt = $pdo->prepare("SELECT * FROM prompts WHERE id = :id AND deleted = 0");
+                $stmt->execute([':id' => $_GET['id']]);
+                $original = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                if ($original) {
+                    // 新しいプロンプトを作成
+                    $stmt = $pdo->prepare("
+                        INSERT INTO prompts (
+                            title,
+                            content,
+                            category,
+                            created_by,
+                            created_at,
+                            updated_at
+                        ) VALUES (
+                            :title,
+                            :content,
+                            :category,
+                            :created_by,
+                            '$timestamp',
+                            '$timestamp'
+                        )
+                    ");
+                    
+                    $data = [
+                        'title' => $original['title'] . ' (copy)',
+                        'content' => $original['content'],
+                        'category' => $original['category'],
+                        'created_by' => $_SESSION['user']
+                    ];
+                    
+                    $stmt->execute($data);
+                    $newId = $pdo->lastInsertId();
+                    
+                    // 履歴の記録
+                    $historyData = [
+                        'title' => $data['title'],
+                        'content' => $data['content']
+                    ];
+                    logHistory($pdo, 'prompts', $newId, $historyData);
+                    
+                    $pdo->commit();
+                    
+                    // 一覧ページにリダイレクト
+                    header("Location: prompts.php?action=list");
+                    exit;
+                }
+            } catch (Exception $e) {
+                $pdo->rollBack();
+                error_log("Error in prompt duplication: " . $e->getMessage());
+                $_SESSION['error_message'] = "プロンプトの複製に失敗しました。";
+                header("Location: prompts.php?action=list");
+                exit;
+            }
+        }
+        redirect('prompts.php?action=list');
+        break;
+        
     case 'delete':
         if (isset($_GET['id'])) {
             $stmt = $pdo->prepare("
-                UPDATE prompts 
+                UPDATE prompts
                 SET deleted = 1, updated_at = '$timestamp'
                 WHERE id = :id
             ");
@@ -285,6 +349,9 @@ switch ($action) {
                     <td>
                         <a href="prompts.php?action=edit&id=<?= h($record['id']) ?>"
                            class="btn btn-sm btn-warning me-2">編集</a>
+                        <a href="prompts.php?action=duplicate&id=<?= h($record['id']) ?>"
+                           class="btn btn-sm btn-warning me-2"
+                           onclick="return confirm('このプロンプトを複製しますか？')">複製</a>
                         <a href="prompts.php?action=delete&id=<?= h($record['id']) ?>"
                            class="btn btn-sm btn-danger"
                            onclick="return confirm('本当に削除しますか？')">削除</a>
