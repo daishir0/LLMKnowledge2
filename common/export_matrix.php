@@ -35,16 +35,44 @@ try {
     // グループIDを文字列に変換
     $group_ids_str = implode(',', $group_ids);
 
-    // まず、プロンプトの順序を取得
-    $prompts_query = "
-        SELECT DISTINCT p.id, p.title
-        FROM prompts p
-        JOIN knowledge k ON k.prompt_id = p.id
-        WHERE k.group_id IN ($group_ids_str)
-        AND k.deleted = 0
-        ORDER BY p.id
-    ";
-    $prompts = $pdo->query($prompts_query)->fetchAll(PDO::FETCH_ASSOC);
+    // グループ情報を取得（ユーザーが指定した順序を保持）
+    $groups = [];
+    foreach ($group_ids as $group_id) {
+        $group_query = "
+            SELECT id, name
+            FROM groups
+            WHERE id = :group_id
+            AND deleted = 0
+        ";
+        $stmt = $pdo->prepare($group_query);
+        $stmt->execute([':group_id' => $group_id]);
+        $group = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($group) {
+            $groups[] = $group;
+        }
+    }
+    
+    // 各グループに関連するプロンプトを取得
+    $group_prompts = [];
+    foreach ($groups as $group) {
+        $prompts_query = "
+            SELECT DISTINCT p.id, p.title
+            FROM prompts p
+            JOIN knowledge k ON k.prompt_id = p.id
+            WHERE k.group_id = :group_id
+            AND k.deleted = 0
+            ORDER BY p.id
+        ";
+        $stmt = $pdo->prepare($prompts_query);
+        $stmt->execute([':group_id' => $group['id']]);
+        $prompts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $group_prompts[$group['id']] = [
+            'name' => $group['name'],
+            'prompts' => $prompts
+        ];
+    }
 
     // 次に、ユニークなrecordを取得（タイトルでグループ化）
     $records_query = "
@@ -106,8 +134,13 @@ try {
     // ヘッダー行の作成
     $sheet->setCellValue('A1', 'PDFタイトル');
     $col = 'B';
-    foreach ($prompts as $prompt) {
-        $sheet->setCellValue($col . '1', $prompt['title']);
+    foreach ($groups as $group) {
+        $group_id = $group['id'];
+        // このグループに関連するプロンプトのタイトルを取得
+        $prompt_titles = array_column($group_prompts[$group_id]['prompts'], 'title');
+        // プロンプトタイトルを結合して表示
+        $prompt_title = implode(', ', $prompt_titles);
+        $sheet->setCellValue($col . '1', $prompt_title);
         $col++;
     }
 
@@ -117,8 +150,17 @@ try {
         $sheet->setCellValue('A' . $row, $title);
         
         $col = 'B';
-        foreach ($prompts as $prompt) {
-            $value = $prompt_data[$prompt['title']] ?? '';
+        foreach ($groups as $group) {
+            $group_id = $group['id'];
+            // このグループに関連するプロンプトの回答を結合
+            $group_answers = [];
+            foreach ($group_prompts[$group_id]['prompts'] as $prompt) {
+                $prompt_title = $prompt['title'];
+                if (isset($prompt_data[$prompt_title])) {
+                    $group_answers[] = $prompt_data[$prompt_title];
+                }
+            }
+            $value = implode("\n\n", $group_answers);
             $sheet->setCellValue($col . $row, $value);
             $col++;
         }
@@ -126,7 +168,7 @@ try {
     }
 
     // スタイルの設定
-    $lastCol = chr(ord('A') + count($prompts));
+    $lastCol = chr(ord('A') + count($groups));
     $lastRow = $row - 1;
 
     // ヘッダー行のスタイル（中央揃え）

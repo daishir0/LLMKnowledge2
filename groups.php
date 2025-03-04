@@ -230,8 +230,8 @@ switch ($action) {
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
                         <button type="submit" class="btn btn-primary" id="exportMatrix">出力</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
                     </div>
                 </form>
             </div>
@@ -257,10 +257,11 @@ switch ($action) {
                 return;
             }
 
-            // フォームを作成してPOSTリクエストを送信
+            // フォームを作成してPOSTリクエストを送信（新しいウィンドウで開く）
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = 'common/export_matrix.php';
+            form.target = '_blank'; // 新しいウィンドウで開く
             
             const input = document.createElement('input');
             input.type = 'hidden';
@@ -271,9 +272,6 @@ switch ($action) {
             document.body.appendChild(form);
             form.submit();
             document.body.removeChild(form);
-            
-            // モーダルを閉じる
-            $('#matrixModal').modal('hide');
         }
 
         // 出力ボタンのクリックイベント
