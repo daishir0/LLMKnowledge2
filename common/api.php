@@ -893,6 +893,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             }
             break;
     
+            case 'get_pending_tasks_count':
+                if (!isAuthenticated()) {
+                    header('Content-Type: application/json');
+                    echo json_encode(['success' => false, 'message' => '認証が必要です。']);
+                    exit;
+                }
+
+                try {
+                    // tasksテーブルの存在チェック
+                    $stmt = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='tasks'");
+                    $tasksTableExists = $stmt->fetchColumn();
+                    
+                    if ($tasksTableExists) {
+                        // 残タスク数（pending状態のタスク数）を取得
+                        $stmt = $pdo->query("
+                            SELECT COUNT(*)
+                            FROM tasks
+                            WHERE deleted = 0
+                            AND status = 'pending'
+                        ");
+                        $pendingTasksCount = $stmt->fetchColumn();
+                    } else {
+                        $pendingTasksCount = 0;
+                    }
+
+                    header('Content-Type: application/json');
+                    echo json_encode([
+                        'success' => true,
+                        'count' => $pendingTasksCount
+                    ]);
+                } catch (Exception $e) {
+                    http_response_code(400);
+                    header('Content-Type: application/json');
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'エラーが発生しました: ' . $e->getMessage(),
+                        'details' => [
+                            'error_type' => get_class($e),
+                            'error_code' => $e->getCode(),
+                            'error_file' => basename($e->getFile()),
+                            'error_line' => $e->getLine()
+                        ]
+                    ]);
+                }
+                break;
+                
             default:
                 header('Content-Type: application/json');
                 echo json_encode(['success' => false, 'message' => '不正なアクションです。']);

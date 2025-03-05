@@ -263,3 +263,71 @@ if ($tasksTableExists) {
 </div>
 
 <?php require_once __DIR__ . '/common/footer.php'; ?>
+
+<script>
+// 残タスク数を更新する関数
+function updatePendingTasksCount() {
+    // 現在の残タスク数を取得
+    const pendingTasksElement = document.querySelector('.bg-warning .card-text.display-4');
+    const currentCount = parseInt(pendingTasksElement.textContent) || 0;
+    
+    // 残タスク数が0の場合は更新しない
+    if (currentCount === 0) {
+        return;
+    }
+    
+    // APIを呼び出して最新の残タスク数を取得
+    fetch('common/api.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'action=get_pending_tasks_count',
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // 残タスク数を更新
+            pendingTasksElement.textContent = data.count;
+            
+            // タスク統計の表示も更新
+            const taskStatsPendingElement = document.querySelector('.badge.bg-warning.mb-2 + .h4');
+            if (taskStatsPendingElement) {
+                taskStatsPendingElement.textContent = data.count;
+            }
+            
+            // グローバルメニューの残タスク表示も更新
+            const pendingTasksCountElement = document.getElementById('pending-tasks-count');
+            if (pendingTasksCountElement) {
+                pendingTasksCountElement.textContent = `残タスク：${data.count > 0 ? data.count + '件' : '無し'}`;
+            }
+            
+            // 前の状態が0でなく、新しい状態が0の場合にアラートを表示
+            if (currentCount > 0 && data.count === 0) {
+                alert('タスクが完了しました');
+            }
+            
+            // 残タスク数が0でない場合は5秒後に再度更新
+            if (data.count > 0) {
+                setTimeout(updatePendingTasksCount, 5000);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('残タスク数の取得に失敗しました:', error);
+    });
+}
+
+// ページ読み込み完了時に初期化
+document.addEventListener('DOMContentLoaded', function() {
+    // 残タスク数を取得
+    const pendingTasksElement = document.querySelector('.bg-warning .card-text.display-4');
+    const currentCount = parseInt(pendingTasksElement.textContent) || 0;
+    
+    // 残タスク数が0でない場合のみ、5秒ごとに更新を開始
+    if (currentCount > 0) {
+        setTimeout(updatePendingTasksCount, 5000);
+    }
+});
+</script>

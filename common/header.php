@@ -40,6 +40,28 @@ require_once __DIR__ . '/auth.php';
                     <li class="nav-item">
                         <a class="nav-link" href="<?= BASE_URL ?>/tasks.php">タスク管理</a>
                     </li>
+                    <li class="nav-item">
+                        <?php
+                        // tasksテーブルの存在チェック
+                        $stmt = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='tasks'");
+                        $tasksTableExists = $stmt->fetchColumn();
+                        
+                        $pendingTasksCount = 0;
+                        if ($tasksTableExists) {
+                            // 残タスク数（pending状態のタスク数）を取得
+                            $stmt = $pdo->query("
+                                SELECT COUNT(*)
+                                FROM tasks
+                                WHERE deleted = 0
+                                AND status = 'pending'
+                            ");
+                            $pendingTasksCount = $stmt->fetchColumn();
+                        }
+                        ?>
+                        <span class="nav-link" id="pending-tasks-count">
+                            残タスク：<?= $pendingTasksCount > 0 ? "{$pendingTasksCount}件" : "無し" ?>
+                        </span>
+                    </li>
                 </ul>
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
