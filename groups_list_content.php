@@ -1,5 +1,12 @@
 <?php defined('APP_ROOT') or die(); ?>
 
+<!-- 検索結果のグループIDを保持するhidden要素（昇順に並べ替え） -->
+<?php
+$groupIds = array_column($groups, 'id');
+sort($groupIds, SORT_NUMERIC); // 数値として昇順に並べ替え
+?>
+<div id="searchResultGroupIds" data-group-ids="<?= implode(',', $groupIds) ?>" style="display:none;"></div>
+
 <div class="table-responsive">
     <table class="table table-striped">
         <colgroup>

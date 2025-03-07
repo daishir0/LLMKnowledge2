@@ -247,6 +247,16 @@ switch ($action) {
 
     <script>
     $(document).ready(function() {
+        // マトリックス出力モーダルが表示される際に、検索結果のグループIDを初期入力する
+        $('#matrixModal').on('show.bs.modal', function (e) {
+            // hidden要素からグループIDを取得
+            const groupIds = $('#searchResultGroupIds').data('group-ids');
+            if (groupIds) {
+                // テキストエリアに設定
+                $('#groupIds').val(groupIds);
+            }
+        });
+    
         function exportMatrix() {
             // 入力値から空白を除去
             const groupIds = $('#groupIds').val().trim().replace(/\s+/g, '');
