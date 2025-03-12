@@ -114,7 +114,7 @@ switch ($action) {
             } catch (Exception $e) {
                 $pdo->rollBack();
                 error_log("Error in group create/edit: " . $e->getMessage());
-                $_SESSION['error_message'] = "エラーが発生しました。";
+                $_SESSION['error_message'] = "An error occurred.";
                 redirect('groups.php?action=list');
             }
         }
@@ -161,11 +161,11 @@ switch ($action) {
                 $stmt->execute([':group_id' => $_GET['id']]);
 
                 $pdo->commit();
-                $_SESSION['success_message'] = 'グループと関連するデータを削除しました。';
+                $_SESSION['success_message'] = 'Group and related data have been deleted.';
             } catch (Exception $e) {
                 $pdo->rollBack();
                 error_log("Error in group delete: " . $e->getMessage());
-                $_SESSION['error_message'] = 'エラーが発生しました。';
+                $_SESSION['error_message'] = 'An error occurred.';
             }
         }
         redirect('groups.php?action=list');
@@ -173,9 +173,9 @@ switch ($action) {
 }
 ?>
 
-<!-- リスト表示画面 -->
+<!-- List display screen -->
 <?php if ($action === 'list'): ?>
-    <h1 class="mb-4">グループ管理</h1>
+    <h1 class="mb-4">Group Management</h1>
     
     <?php if (isset($_SESSION['success_message'])): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -198,61 +198,61 @@ switch ($action) {
             <form class="d-flex" method="GET" action="groups.php">
                 <input type="hidden" name="action" value="list">
                 <input type="search" name="search" class="form-control me-2" 
-                       value="<?= h($searchTerm) ?>" placeholder="検索...">
-                <button class="btn btn-outline-primary" type="submit">検索</button>
+                       value="<?= h($searchTerm) ?>" placeholder="Search...">
+                <button class="btn btn-outline-primary" type="submit">Search</button>
             </form>
         </div>
         <div class="col text-end">
-            <a href="groups.php?action=create" class="btn btn-primary">新規作成</a>
+            <a href="groups.php?action=create" class="btn btn-primary">Create New</a>
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#matrixModal">
-                マトリックス出力
+                Matrix Export
             </button>
         </div>
     </div>
 
-    <!-- マトリックス出力用モーダル -->
+    <!-- Matrix export modal -->
     <div class="modal fade" id="matrixModal" tabindex="-1" aria-labelledby="matrixModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="matrixModalLabel">マトリックス出力</h5>
+                    <h5 class="modal-title" id="matrixModalLabel">Matrix Export</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form id="matrixForm" onsubmit="return false;">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="groupIds" class="form-label">グループID（カンマ区切り）</label>
-                            <input type="text" class="form-control" id="groupIds" 
-                                   placeholder="例: 8,10,11"
+                            <label for="groupIds" class="form-label">Group IDs (comma separated)</label>
+                            <input type="text" class="form-control" id="groupIds"
+                                   placeholder="Example: 8,10,11"
                                    pattern="^[0-9]+(,[0-9]+)*$"
-                                   title="カンマ区切りの数字のみ入力可能です">
-                            <div class="form-text">カンマ(,)区切りでナレッジマトリックス出力したいグループIDを記載してください</div>
+                                   title="Only comma-separated numbers are allowed">
+                            <div class="form-text">Enter the group IDs you want to include in the knowledge matrix, separated by commas</div>
                         </div>
                         <div class="mb-3 form-check">
                             <input type="checkbox" class="form-check-input" id="includePlainKnowledge">
-                            <label class="form-check-label" for="includePlainKnowledge">プレーンナレッジを加える</label>
+                            <label class="form-check-label" for="includePlainKnowledge">Include Plain Knowledge</label>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary" id="exportMatrix">出力</button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                        <button type="submit" class="btn btn-primary" id="exportMatrix">Export</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- 既存のテーブルと他のコンテンツ -->
+    <!-- Existing tables and other content -->
     <?php require_once 'groups_list_content.php'; ?>
 
     <script>
     $(document).ready(function() {
-        // マトリックス出力モーダルが表示される際に、検索結果のグループIDを初期入力する
+        // When the matrix export modal is displayed, initialize with group IDs from search results
         $('#matrixModal').on('show.bs.modal', function (e) {
-            // hidden要素からグループIDを取得
+            // Get group IDs from hidden element
             const groupIds = $('#searchResultGroupIds').data('group-ids');
             if (groupIds) {
-                // テキストエリアに設定
+                // Set to text area
                 $('#groupIds').val(groupIds);
             }
         });
@@ -261,30 +261,30 @@ switch ($action) {
             // 入力値から空白を除去
             const groupIds = $('#groupIds').val().trim().replace(/\s+/g, '');
             if (!groupIds) {
-                alert('グループIDを入力してください。');
+                alert('Please enter group IDs.');
                 return;
             }
             
-            // 入力値の検証
+            // Validate input
             if (!/^[0-9]+(,[0-9]+)*$/.test(groupIds)) {
-                alert('無効な入力形式です。カンマ区切りの数字のみ入力してください。');
+                alert('Invalid input format. Please enter only comma-separated numbers.');
                 return;
             }
 
-            // フォームを作成してPOSTリクエストを送信（新しいウィンドウで開く）
+            // Create form and send POST request (open in new window)
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = 'common/export_matrix.php';
-            form.target = '_blank'; // 新しいウィンドウで開く
+            form.target = '_blank'; // Open in new window
             
-            // グループIDの入力
+            // Group ID input
             const groupIdsInput = document.createElement('input');
             groupIdsInput.type = 'hidden';
             groupIdsInput.name = 'group_ids';
             groupIdsInput.value = groupIds;
             form.appendChild(groupIdsInput);
             
-            // プレーンナレッジを加えるかどうかのチェック状態
+            // Check if plain knowledge should be included
             const includePlainKnowledge = $('#includePlainKnowledge').prop('checked');
             const includePlainKnowledgeInput = document.createElement('input');
             includePlainKnowledgeInput.type = 'hidden';
@@ -297,12 +297,12 @@ switch ($action) {
             document.body.removeChild(form);
         }
 
-        // 出力ボタンのクリックイベント
+        // Export button click event
         $('#exportMatrix').click(exportMatrix);
 
-        // Enterキーのイベント
+        // Enter key event
         $('#groupIds').keypress(function(e) {
-            if (e.which === 13) { // Enterキー
+            if (e.which === 13) { // Enter key
                 e.preventDefault();
                 exportMatrix();
             }
@@ -310,11 +310,11 @@ switch ($action) {
     });
     </script>
 
-<!-- 詳細表示画面 -->
+<!-- Detail display screen -->
 <?php elseif ($action === 'view'): ?>
     <?php require_once 'groups_view_content.php'; ?>
 
-<!-- 作成・編集画面 -->
+<!-- Create/Edit screen -->
 <?php else: ?>
     <?php require_once 'groups_edit_content.php'; ?>
 <?php endif; ?>

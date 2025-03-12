@@ -26,7 +26,7 @@ switch ($action) {
 
                 if (!move_uploaded_file($_FILES['file']['tmp_name'], $tmpPath)) {
                     error_log('Failed to move uploaded file. Upload error code: ' . $_FILES['file']['error'], 3, './common/logs.txt');
-                    throw new Exception('ファイルのアップロードに失敗しました。');
+                    throw new Exception('Failed to upload file.');
                 }
 
                 error_log('File moved successfully. Initializing MarkItDown client...', 3, './common/logs.txt');
@@ -96,7 +96,7 @@ switch ($action) {
                     header('Content-Type: application/json; charset=utf-8');
                     echo json_encode([
                         'success' => true,
-                        'message' => 'ファイルが正常にアップロードされ、変換されました。',
+                        'message' => 'File was successfully uploaded and converted.',
                         'id' => $id
                     ]);
                 } catch (Exception $e) {
@@ -111,7 +111,7 @@ switch ($action) {
                 http_response_code(400);
                 echo json_encode([
                     'success' => false,
-                    'message' => 'エラーが発生しました: ' . $e->getMessage()
+                    'message' => 'An error occurred: ' . $e->getMessage()
                 ]);
             }
         } else {
@@ -120,7 +120,7 @@ switch ($action) {
             http_response_code(400);
             echo json_encode([
                 'success' => false,
-                'message' => '不正なリクエストです。'
+                'message' => 'Invalid request.'
             ]);
         }
         exit;
@@ -301,9 +301,9 @@ switch ($action) {
 }
 ?>
 
-<!-- リスト表示画面 -->
+<!-- List display screen -->
 <?php if ($action === 'list'): ?>
-    <h1 class="mb-4">プレーンナレッジ管理</h1>
+    <h1 class="mb-4">Plain Knowledge Management</h1>
     
     <?php if (isset($_SESSION['success_message'])): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -326,9 +326,9 @@ switch ($action) {
             <form class="d-flex" method="GET" action="record.php">
                 <input type="hidden" name="action" value="list">
                 <input type="search" name="search" class="form-control me-2"
-                       value="<?= h($searchTerm) ?>" placeholder="検索...">
+                       value="<?= h($searchTerm) ?>" placeholder="Search...">
                 <select name="group_id" class="form-select me-2" style="width: auto;">
-                    <option value="">グループ指定なし</option>
+                    <option value="">No group specified</option>
                     <?php
                     $groupStmt = $pdo->query("
                         SELECT id, name
@@ -344,13 +344,13 @@ switch ($action) {
                         </option>
                     <?php endwhile; ?>
                 </select>
-                <button class="btn btn-outline-primary" type="submit">検索</button>
+                <button class="btn btn-outline-primary" type="submit">Search</button>
             </form>
         </div>
         <div class="col text-end">
-            <a href="record.php?action=create" class="btn btn-primary me-2">新規作成</a>
+            <a href="record.php?action=create" class="btn btn-primary me-2">Create New</a>
             <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">
-                アップロード
+                Upload
             </button>
         </div>
 
@@ -359,14 +359,14 @@ switch ($action) {
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="uploadModalLabel">ファイルアップロード</h5>
+                        <h5 class="modal-title" id="uploadModalLabel">File Upload</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="upload_group" class="form-label">登録先グループ</label>
+                            <label for="upload_group" class="form-label">Target Group</label>
                             <select class="form-select" id="upload_group">
-                                <option value="">グループ指定なし</option>
+                                <option value="">No group specified</option>
                                 <?php
                                 $groupStmt = $pdo->query("
                                     SELECT id, name
@@ -384,15 +384,15 @@ switch ($action) {
                         </div>
                         <div id="dropZone" class="border rounded p-4 text-center mb-3" style="min-height: 150px;">
                             <div id="uploadArea">
-                                <p class="mb-2">ここにファイルをドロップすると変換処理を開始します</p>
-                                <p class="text-muted small">または</p>
+                                <p class="mb-2">Drop files here to start conversion process</p>
+                                <p class="text-muted small">or</p>
                                 <input type="file" id="fileInput" multiple class="d-none">
                                 <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('fileInput').click()">
-                                    ファイルを選択
+                                    Select Files
                                 </button>
                             </div>
                             <div id="uploadProgress" class="d-none w-100">
-                                <h6 class="mb-3">アップロード状況</h6>
+                                <h6 class="mb-3">Upload Status</h6>
                                 <div class="progress mb-2">
                                     <div class="progress-bar" role="progressbar" style="width: 0%"></div>
                                 </div>
@@ -404,7 +404,7 @@ switch ($action) {
                             <input type="text" class="form-control" id="upload_reference">
                         </div>
                         <div id="uploadProgress" class="d-none">
-                            <h6>アップロード状況</h6>
+                            <h6>Upload Status</h6>
                             <div class="progress mb-2">
                                 <div class="progress-bar" role="progressbar" style="width: 0%"></div>
                             </div>
@@ -412,8 +412,8 @@ switch ($action) {
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
-                        <button type="button" class="btn btn-warning" id="taskRegisterBtn" disabled>タスク登録</button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-warning" id="taskRegisterBtn" disabled>Register Task</button>
                     </div>
                 </div>
             </div>
@@ -489,7 +489,7 @@ switch ($action) {
 
                     progressBar.style.width = `${(i / files.length) * 100}%`;
                     uploadStatus.innerHTML = `
-                        <div class="mb-2">処理中: ${file.name} (${i + 1}/${files.length})</div>
+                        <div class="mb-2">Processing: ${file.name} (${i + 1}/${files.length})</div>
                         ${errors.map(err => `<div class="text-danger small">${err}</div>`).join('')}
                     `;
 
@@ -503,18 +503,18 @@ switch ($action) {
                         try {
                             result = await response.json();
                         } catch (e) {
-                            throw new Error('サーバーからの応答が不正です');
+                            throw new Error('Invalid response from server');
                         }
 
                         if (response.ok && result.success) {
                             successCount++;
                         } else {
                             failCount++;
-                            errors.push(`${file.name}: ${result.message || 'エラーが発生しました'}`);
+                            errors.push(`${file.name}: ${result.message || 'An error occurred'}`);
                         }
                     } catch (error) {
                         failCount++;
-                        errors.push(`${file.name}: ${error.message || '通信エラーが発生しました'}`);
+                        errors.push(`${file.name}: ${error.message || 'A communication error occurred'}`);
                         console.error(`Error uploading ${file.name}:`, error);
                     }
                 }
@@ -522,9 +522,9 @@ switch ($action) {
                 progressBar.style.width = '100%';
                 
                 // 結果表示の構築
-                let statusHtml = `<div class="mb-2">完了: 成功 ${successCount}件, 失敗 ${failCount}件</div>`;
+                let statusHtml = `<div class="mb-2">Completed: Success ${successCount} items, Failed ${failCount} items</div>`;
                 if (errors.length > 0) {
-                    statusHtml += '<div class="mt-2"><strong>エラー詳細:</strong></div>';
+                    statusHtml += '<div class="mt-2"><strong>Error Details:</strong></div>';
                     statusHtml += errors.map(err => `<div class="text-danger small">${err}</div>`).join('');
                 }
                 uploadStatus.innerHTML = statusHtml;
@@ -545,7 +545,7 @@ switch ($action) {
             taskRegisterBtn.addEventListener('click', async function() {
                 const groupId = document.getElementById('upload_group').value;
                 if (!groupId) {
-                    alert('タスク登録にはグループの指定が必要です。');
+                    alert('Group specification is required for task registration.');
                     return;
                 }
 
@@ -568,11 +568,11 @@ switch ($action) {
                         alert(result.message);
                         location.reload();
                     } else {
-                        alert('エラーが発生しました: ' + result.message);
+                        alert('An error occurred: ' + result.message);
                         taskRegisterBtn.disabled = false;
                     }
                 } catch (error) {
-                    alert('通信エラーが発生しました。');
+                    alert('A communication error occurred.');
                     taskRegisterBtn.disabled = false;
                 }
             });
@@ -583,19 +583,19 @@ switch ($action) {
     <div class="table-responsive">
         <table class="table table-striped">
             <colgroup>
-                <col style="min-width: 80px; width: 80px;">  <!-- ID列 -->
-                <col style="min-width: 200px; max-width: 400px;">  <!-- タイトル列 -->
-                <col style="min-width: 120px; width: 120px;">  <!-- 作成日時列 -->
-                <col style="min-width: 120px; width: 120px;">  <!-- 更新日時列 -->
-                <col style="min-width: 160px; width: 160px;">  <!-- 操作列 -->
+                <col style="min-width: 80px; width: 80px;">  <!-- ID column -->
+                <col style="min-width: 200px; max-width: 400px;">  <!-- Title column -->
+                <col style="min-width: 120px; width: 120px;">  <!-- Created date column -->
+                <col style="min-width: 120px; width: 120px;">  <!-- Updated date column -->
+                <col style="min-width: 160px; width: 160px;">  <!-- Actions column -->
             </colgroup>
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>タイトル</th>
-                    <th class="d-none d-md-table-cell">作成日時</th>
-                    <th class="d-none d-md-table-cell">更新日時</th>
-                    <th>操作</th>
+                    <th>Title</th>
+                    <th class="d-none d-md-table-cell">Created Date</th>
+                    <th class="d-none d-md-table-cell">Updated Date</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -611,10 +611,10 @@ switch ($action) {
                     <td class="d-none d-md-table-cell"><?= h(date('Y/m/d H:i', strtotime($record['updated_at']))) ?></td>
                     <td>
                         <a href="record.php?action=edit&id=<?= h($record['id']) ?>&search=<?= h($searchTerm) ?>&group_id=<?= h($groupId) ?>"
-                           class="btn btn-sm btn-warning me-2">編集</a>
+                           class="btn btn-sm btn-warning me-2">Edit</a>
                         <a href="record.php?action=delete&id=<?= h($record['id']) ?>"
                            class="btn btn-sm btn-danger"
-                           onclick="return confirm('本当に削除しますか？')">削除</a>
+                           onclick="return confirm('Are you sure you want to delete?')">Delete</a>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -623,24 +623,24 @@ switch ($action) {
     </div>
 
     <style>
-        /* テーブルセルのスタイル */
+        /* Table cell styles */
         .table td {
             vertical-align: middle;
         }
         
-        /* リンクテキストが省略される場合でもホバー可能に */
+        /* Make link text hoverable even when truncated */
         .text-truncate a {
             display: block;
             width: 100%;
         }
         
-        /* ツールチップのスタイル */
+        /* Tooltip styles */
         [title] {
             position: relative;
             cursor: help;
         }
 
-        /* スマートフォンでのボタン表示調整 */
+        /* Button display adjustment for smartphones */
         @media (max-width: 576px) {
             .btn {
                 display: block;
@@ -656,22 +656,22 @@ switch ($action) {
     <?php if (isset($_GET['group_id']) && $_GET['group_id'] !== ''): ?>
     <div class="text-center mb-4">
         <button id="exportGroupButton" class="btn btn-success" data-group-id="<?= h($_GET['group_id']) ?>">
-            このグループのプレーンナレッジを全てエクスポートする
+            Export All Plain Knowledge in This Group
         </button>
     </div>
     <?php endif; ?>
 
-    <!-- 表示件数選択 -->
+    <!-- Display count selection -->
     <div class="row mb-3">
         <div class="col-auto">
             <form class="d-flex align-items-center" method="GET" action="record.php">
                 <input type="hidden" name="action" value="list">
                 <input type="hidden" name="search" value="<?= h($searchTerm) ?>">
                 <input type="hidden" name="group_id" value="<?= h($groupId) ?>">
-                <label for="perPage" class="me-2">表示件数:</label>
+                <label for="perPage" class="me-2">Display count:</label>
                 <select id="perPage" name="per_page" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
                     <?php foreach ([10, 20, 50, 100] as $value): ?>
-                    <option value="<?= $value ?>" <?= $perPage == $value ? 'selected' : '' ?>><?= $value ?>件</option>
+                    <option value="<?= $value ?>" <?= $perPage == $value ? 'selected' : '' ?>><?= $value ?> items</option>
                     <?php endforeach; ?>
                 </select>
             </form>
@@ -681,19 +681,19 @@ switch ($action) {
         </div>
     </div>
 
-    <!-- ページネーション -->
+    <!-- Pagination -->
     <?php if ($pagination['total_pages'] > 1): ?>
-    <nav aria-label="ページナビゲーション">
+    <nav aria-label="Page navigation">
         <ul class="pagination justify-content-center">
-            <!-- 前へボタン -->
+            <!-- Previous button -->
             <li class="page-item <?= !$pagination['has_previous'] ? 'disabled' : '' ?>">
-                <a class="page-link" href="<?= $pagination['has_previous'] ? 'record.php?action=list&page=' . ($page - 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . (isset($_GET['group_id']) && $_GET['group_id'] !== '' ? '&group_id=' . h($_GET['group_id']) : '') . '&per_page=' . $perPage : '#' ?>" aria-label="前のページ" <?= !$pagination['has_previous'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
+                <a class="page-link" href="<?= $pagination['has_previous'] ? 'record.php?action=list&page=' . ($page - 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . (isset($_GET['group_id']) && $_GET['group_id'] !== '' ? '&group_id=' . h($_GET['group_id']) : '') . '&per_page=' . $perPage : '#' ?>" aria-label="Previous page" <?= !$pagination['has_previous'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
                     <span aria-hidden="true">&laquo;</span>
-                    <span class="visually-hidden">前のページ</span>
+                    <span class="visually-hidden">Previous page</span>
                 </a>
             </li>
 
-            <!-- ページ番号 -->
+            <!-- Page numbers -->
             <?php foreach ($pagination['pages'] as $p): ?>
                 <?php if ($p === '...'): ?>
                     <li class="page-item disabled">
@@ -708,27 +708,27 @@ switch ($action) {
                 <?php endif; ?>
             <?php endforeach; ?>
 
-            <!-- 次へボタン -->
+            <!-- Next button -->
             <li class="page-item <?= !$pagination['has_next'] ? 'disabled' : '' ?>">
-                <a class="page-link" href="<?= $pagination['has_next'] ? 'record.php?action=list&page=' . ($page + 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . (isset($_GET['group_id']) && $_GET['group_id'] !== '' ? '&group_id=' . h($_GET['group_id']) : '') . '&per_page=' . $perPage : '#' ?>" aria-label="次のページ" <?= !$pagination['has_next'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
+                <a class="page-link" href="<?= $pagination['has_next'] ? 'record.php?action=list&page=' . ($page + 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . (isset($_GET['group_id']) && $_GET['group_id'] !== '' ? '&group_id=' . h($_GET['group_id']) : '') . '&per_page=' . $perPage : '#' ?>" aria-label="Next page" <?= !$pagination['has_next'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
                     <span aria-hidden="true">&raquo;</span>
-                    <span class="visually-hidden">次のページ</span>
+                    <span class="visually-hidden">Next page</span>
                 </a>
             </li>
         </ul>
     </nav>
 
-    <!-- ページ番号直接入力フォーム -->
+    <!-- Direct page number input form -->
     <div class="text-center mt-3">
         <form class="d-inline-flex align-items-center" method="GET" action="record.php">
             <input type="hidden" name="action" value="list">
             <input type="hidden" name="search" value="<?= h($searchTerm) ?>">
             <input type="hidden" name="group_id" value="<?= h($groupId) ?>">
             <input type="hidden" name="per_page" value="<?= $perPage ?>">
-            <label for="pageInput" class="me-2">ページ指定:</label>
+            <label for="pageInput" class="me-2">Go to page:</label>
             <input type="number" id="pageInput" name="page" class="form-control form-control-sm me-2" style="width: 80px;" min="1" max="<?= $pagination['total_pages'] ?>" value="<?= $page ?>">
-            <button type="submit" class="btn btn-sm btn-outline-primary">移動</button>
-            <span class="ms-2">/ <?= $pagination['total_pages'] ?>ページ</span>
+            <button type="submit" class="btn btn-sm btn-outline-primary">Go</button>
+            <span class="ms-2">/ <?= $pagination['total_pages'] ?> pages</span>
         </form>
     </div>
     <?php endif; ?>
@@ -736,7 +736,7 @@ switch ($action) {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
     $(document).ready(function() {
-        // グループエクスポート機能
+        // Group export function
         $('#exportGroupButton').click(function(e) {
             e.preventDefault();
             const groupId = $(this).data('group-id');
@@ -745,7 +745,7 @@ switch ($action) {
                 .then(response => {
                     if (!response.ok) {
                         return response.json().then(data => {
-                            throw new Error(data.message || '不明なエラーが発生しました');
+                            throw new Error(data.message || 'An unknown error occurred');
                         });
                     }
                     return response.blob();
@@ -769,7 +769,7 @@ switch ($action) {
 
 <!-- 詳細表示画面 -->
 <?php elseif ($action === 'view'): ?>
-    <h1 class="mb-4">プレーンナレッジ詳細</h1>
+    <h1 class="mb-4">Plain Knowledge Details</h1>
     
     <?php if (isset($_SESSION['error_message'])): ?>
         <div class="alert alert-danger">
@@ -782,29 +782,29 @@ switch ($action) {
         <div class="card-body">
             <h5 class="card-title"><?= h($record['title']) ?></h5>
             <p class="card-text"><?= nl2br(h($record['text'])) ?></p>
-            <h6 class="mt-4">グループ</h6>
+            <h6 class="mt-4">Group</h6>
             <p class="card-text">
                 <?php if ($record['group_id']): ?>
                     <?= h($record['group_id']) ?>: <?= h($record['group_name']) ?>
                 <?php else: ?>
-                    （グループ無し）
+                    (No Group)
                 <?php endif; ?>
             </p>
             <h6 class="mt-4">Reference</h6>
-            <p class="card-text"><?= !empty($record['reference']) ? nl2br(h($record['reference'])) : '（登録なし）' ?></p>
+            <p class="card-text"><?= !empty($record['reference']) ? nl2br(h($record['reference'])) : '(Not Registered)' ?></p>
             
             <!-- Knowledge化タスク作成フォーム -->
             <div class="mt-4 border-top pt-4">
-                <h6>Knowledge化タスク作成</h6>
+                <h6>Create Knowledge Task</h6>
                 <form id="taskForm" class="mt-3">
                     <input type="hidden" name="action" value="create_task">
                     <input type="hidden" name="source_type" value="record">
                     <input type="hidden" name="source_id" value="<?= h($record['id']) ?>">
                     <input type="hidden" name="group_id" value="<?= h($record['group_id']) ?>">
                     <div class="mb-3">
-                        <label for="prompt_id" class="form-label">使用プロンプト</label>
+                        <label for="prompt_id" class="form-label">Used Prompt</label>
                         <select class="form-control" id="prompt_id" name="prompt_id" required>
-                            <option value="">選択してください</option>
+                            <option value="">Please select</option>
                             <?php
                             $stmt = $pdo->query("
                                 SELECT id, title, content
@@ -823,15 +823,15 @@ switch ($action) {
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">プロンプト内容プレビュー</label>
+                        <label class="form-label">Prompt Content Preview</label>
                         <pre class="border p-3 bg-light" id="prompt_preview"></pre>
                     </div>
-                    <button type="button" id="createTaskButton" class="btn btn-primary">タスク作成</button>
+                    <button type="button" id="createTaskButton" class="btn btn-primary">Create Task</button>
                 </form>
             </div>
             
             <?php if (isset($record['knowledge_id'])): ?>
-            <h6 class="mt-4">関連ナレッジ</h6>
+            <h6 class="mt-4">Related Knowledge</h6>
             <ul>
                 <li><a href="knowledge.php?action=view&id=<?= h($record['knowledge_id']) ?>">
                     <?= h($record['knowledge_title']) ?>
@@ -841,7 +841,7 @@ switch ($action) {
         </div>
     </div>
 
-    <!-- プロンプトプレビューのためのJavaScript -->
+    <!-- JavaScript for prompt preview -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
     $(document).ready(function() {
@@ -867,7 +867,7 @@ switch ($action) {
                     }
                 },
                 error: function() {
-                    alert('通信エラーが発生しました。');
+                    alert('A communication error occurred.');
                     $button.prop('disabled', false);
                 }
             });
@@ -882,7 +882,7 @@ switch ($action) {
                 .then(response => {
                     if (!response.ok) {
                         return response.json().then(data => {
-                            throw new Error(data.message || '不明なエラーが発生しました');
+                            throw new Error(data.message || 'An unknown error occurred');
                         });
                     }
                     return response.blob();
@@ -904,15 +904,15 @@ switch ($action) {
     });
     </script>
 
-        <!-- 履歴表示 -->
-    <h3 class="mb-3">変更履歴</h3>
+        <!-- History display -->
+    <h3 class="mb-3">Change History</h3>
     <table class="table">
         <thead>
             <tr>
-                <th>変更日時</th>
-                <th>タイトル</th>
-                <th>内容</th>
-                <th>変更者</th>
+                <th>Change Date</th>
+                <th>Title</th>
+                <th>Content</th>
+                <th>Modified By</th>
             </tr>
         </thead>
         <tbody>
@@ -922,28 +922,28 @@ switch ($action) {
                 <td><?= h($entry['title']) ?></td>
                 <td>
                     <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#historyModal<?= h($entry['id']) ?>">
-                        内容を表示
+                        Show Content
                     </button>
                     
-                    <!-- 履歴内容モーダル -->
+                    <!-- History content modal -->
                     <div class="modal fade" id="historyModal<?= h($entry['id']) ?>" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog modal-lg">
                             <div class="modal-content">
                                 <div class="modal-header">
-                                    <h5 class="modal-title">履歴詳細</h5>
+                                    <h5 class="modal-title">History Details</h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <h6>タイトル</h6>
+                                    <h6>Title</h6>
                                     <p><?= h($entry['title']) ?></p>
-                                    <h6>内容</h6>
+                                    <h6>Content</h6>
                                     <pre class="border p-3 bg-light"><?= h($entry['text']) ?></pre>
                                     <p class="text-muted">
-                                        変更日時: <?= h(date('Y/m/d H:i', strtotime($entry['created_at']))) ?>
+                                        Change Date: <?= h(date('Y/m/d H:i', strtotime($entry['created_at']))) ?>
                                     </p>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                 </div>
                             </div>
                         </div>
@@ -956,51 +956,51 @@ switch ($action) {
     </table>
 
     <div class="mb-4">
-        <a href="record.php?action=list" class="btn btn-secondary">戻る</a>
-        <a href="record.php?action=edit&id=<?= h($record['id']) ?>" 
-           class="btn btn-warning">編集</a>
-        <button id="exportButton" class="btn btn-success" data-record-id="<?= h($record['id']) ?>">エクスポート</button>
+        <a href="record.php?action=list" class="btn btn-secondary">Back</a>
+        <a href="record.php?action=edit&id=<?= h($record['id']) ?>"
+           class="btn btn-warning">Edit</a>
+        <button id="exportButton" class="btn btn-success" data-record-id="<?= h($record['id']) ?>">Export</button>
     </div>
 
 <!-- タスク作成完了画面 -->
 <?php if (isset($taskCreated) && $taskCreated): ?>
-    <h1 class="mb-4">タスク作成完了</h1>
+    <h1 class="mb-4">Task Creation Completed</h1>
     
     <div class="alert alert-success">
-        <h4 class="alert-heading">タスクが正常に作成されました！</h4>
-        <p>Knowledge化タスクが正常に作成されました。タスク一覧から進捗を確認できます。</p>
+        <h4 class="alert-heading">Task was successfully created!</h4>
+        <p>Knowledge conversion task was successfully created. You can check the progress from the task list.</p>
     </div>
     
     <div class="mt-4">
-        <a href="tasks.php" class="btn btn-primary">タスク一覧へ</a>
-        <a href="record.php?action=view&id=<?= h($sourceId) ?>" class="btn btn-secondary">元の記事に戻る</a>
+        <a href="tasks.php" class="btn btn-primary">Go to Task List</a>
+        <a href="record.php?action=view&id=<?= h($sourceId) ?>" class="btn btn-secondary">Back to Original Article</a>
     </div>
 <?php endif; ?>
 
 <!-- 作成・編集画面 -->
 <?php else: ?>
     <h1 class="mb-4">
-        <?= $action === 'create' ? 'プレーンナレッジ作成' : 'プレーンナレッジ編集' ?>
+        <?= $action === 'create' ? 'Create Plain Knowledge' : 'Edit Plain Knowledge' ?>
     </h1>
     
     <form method="POST" class="needs-validation" novalidate>
         <input type="hidden" name="original_search" value="<?= h($_GET['search'] ?? '') ?>">
         <input type="hidden" name="original_group_id" value="<?= h($_GET['group_id'] ?? '') ?>">
         <div class="mb-3">
-            <label for="title" class="form-label">タイトル</label>
+            <label for="title" class="form-label">Title</label>
             <input type="text" class="form-control" id="title" name="title" 
                    value="<?= isset($record) ? h($record['title']) : '' ?>" required>
         </div>
         
         <div class="mb-3">
-            <label for="text" class="form-label">内容</label>
+            <label for="text" class="form-label">Content</label>
             <textarea class="form-control" id="text" name="text" rows="10" required><?= isset($record) ? h($record['text']) : '' ?></textarea>
         </div>
         
         <div class="mb-3">
-            <label for="group_id" class="form-label">グループ</label>
+            <label for="group_id" class="form-label">Group</label>
             <select name="group_id" id="group_id" class="form-select">
-                <option value="">選択してください</option>
+                <option value="">Please select</option>
                 <?php
                 $groupStmt = $pdo->query("
                     SELECT id, name
@@ -1024,8 +1024,8 @@ switch ($action) {
                     value="<?= isset($record) ? h($record['reference']) : '' ?>">
         </div>
         
-        <button type="submit" class="btn btn-primary">保存</button>
-        <a href="record.php?action=list" class="btn btn-secondary">キャンセル</a>
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a href="record.php?action=list" class="btn btn-secondary">Cancel</a>
     </form>
 <?php endif; ?>
 

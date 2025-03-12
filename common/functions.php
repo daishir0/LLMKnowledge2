@@ -80,10 +80,10 @@ function getPagination($total, $perPage, $currentPage) {
         'has_next' => $currentPage < $totalPages,
         'from' => ($currentPage - 1) * $perPage + 1,
         'to' => min($currentPage * $perPage, $total),
-        'showing' => sprintf('全%d件中 %d-%d件を表示中',
-            $total,
+        'showing' => sprintf('Showing %d-%d of %d items',
             ($currentPage - 1) * $perPage + 1,
-            min($currentPage * $perPage, $total)
+            min($currentPage * $perPage, $total),
+            $total
         )
     ];
 }

@@ -251,18 +251,18 @@ switch ($action) {
 }
 ?>
 
-<!-- リスト表示画面 -->
+<!-- List display screen -->
 <?php if ($action === 'list'): ?>
-    <h1 class="mb-4">ナレッジ管理</h1>
+    <h1 class="mb-4">Knowledge Management</h1>
     
     <div class="row mb-4">
         <div class="col">
             <form class="d-flex" method="GET" action="knowledge.php">
                 <input type="hidden" name="action" value="list">
                 <input type="search" name="search" class="form-control me-2"
-                       value="<?= h($searchTerm) ?>" placeholder="検索...">
+                       value="<?= h($searchTerm) ?>" placeholder="Search...">
                 <select name="group_id" class="form-select me-2" style="width: auto;">
-                    <option value="">グループ指定なし</option>
+                    <option value="">No group specified</option>
                     <?php
                     $groupStmt = $pdo->query("
                         SELECT id, name
@@ -278,7 +278,7 @@ switch ($action) {
                         </option>
                     <?php endwhile; ?>
                 </select>
-                <button class="btn btn-outline-primary" type="submit">検索</button>
+                <button class="btn btn-outline-primary" type="submit">Search</button>
             </form>
         </div>
     </div>
@@ -286,21 +286,21 @@ switch ($action) {
     <div class="table-responsive">
         <table class="table table-striped">
             <colgroup>
-                <col style="min-width: 80px; width: 80px;">  <!-- ID列 -->
-                <col style="min-width: 200px; max-width: 300px;">  <!-- タイトル列 -->
-                <col style="min-width: 200px; max-width: 300px;">  <!-- 親ナレッジ列 -->
-                <col style="min-width: 150px; max-width: 200px;">  <!-- プロンプト列 -->
-                <col style="min-width: 120px; width: 120px;">  <!-- 作成日時列 -->
-                <col style="min-width: 160px; width: 160px;">  <!-- 操作列 -->
+                <col style="min-width: 80px; width: 80px;">  <!-- ID column -->
+                <col style="min-width: 200px; max-width: 300px;">  <!-- Title column -->
+                <col style="min-width: 200px; max-width: 300px;">  <!-- Parent knowledge column -->
+                <col style="min-width: 150px; max-width: 200px;">  <!-- Prompt column -->
+                <col style="min-width: 120px; width: 120px;">  <!-- Created date column -->
+                <col style="min-width: 160px; width: 160px;">  <!-- Actions column -->
             </colgroup>
         <thead>
             <tr>
                 <th>ID</th>
-                <th>タイトル</th>
-                <th>親ナレッジ/プレーンナレッジ</th>
-                <th>使用プロンプト</th>
-                <th>作成日時</th>
-                <th>操作</th>
+                <th>Title</th>
+                <th>Parent Knowledge/Plain Knowledge</th>
+                <th>Used Prompt</th>
+                <th>Created Date</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -314,9 +314,9 @@ switch ($action) {
                 </td>
                 <td style="word-break: break-word;">
                     <?php if ($record['parent_type'] === 'record'): ?>
-                        <span class="badge bg-info">プレーン</span>
+                        <span class="badge bg-info">Plain</span>
                     <?php else: ?>
-                        <span class="badge bg-success">ナレッジ</span>
+                        <span class="badge bg-success">Knowledge</span>
                     <?php endif; ?>
                     <span style="display: inline-block; max-width: calc(100% - 70px); word-break: break-word;">
                         <?= h($record['parent_title']) ?>
@@ -328,10 +328,10 @@ switch ($action) {
                 <td><?= h(date('Y/m/d H:i', strtotime($record['created_at']))) ?></td>
                 <td>
                     <a href="knowledge.php?action=edit&id=<?= h($record['id']) ?>&search=<?= h($searchTerm) ?>&group_id=<?= h($groupId) ?>"
-                       class="btn btn-sm btn-warning">編集</a>
+                       class="btn btn-sm btn-warning">Edit</a>
                     <a href="knowledge.php?action=delete&id=<?= h($record['id']) ?>"
                        class="btn btn-sm btn-danger"
-                       onclick="return confirm('本当に削除しますか？')">削除</a>
+                       onclick="return confirm('Are you sure you want to delete?')">Delete</a>
                 </td>
             </tr>
             <?php endforeach; ?>
@@ -366,22 +366,22 @@ switch ($action) {
     <?php if (isset($_GET['group_id']) && $_GET['group_id'] !== ''): ?>
     <div class="text-center mb-4">
         <button id="exportGroupButton" class="btn btn-success" data-group-id="<?= h($_GET['group_id']) ?>">
-            このグループのナレッジを全てエクスポートする
+            Export All Knowledge in This Group
         </button>
     </div>
     <?php endif; ?>
 
-    <!-- 表示件数選択 -->
+    <!-- Display count selection -->
     <div class="row mb-3">
         <div class="col-auto">
             <form class="d-flex align-items-center" method="GET" action="knowledge.php">
                 <input type="hidden" name="action" value="list">
                 <input type="hidden" name="search" value="<?= h($searchTerm) ?>">
                 <input type="hidden" name="group_id" value="<?= h($groupId) ?>">
-                <label for="perPage" class="me-2">表示件数:</label>
+                <label for="perPage" class="me-2">Display count:</label>
                 <select id="perPage" name="per_page" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
                     <?php foreach ([10, 20, 50, 100] as $value): ?>
-                    <option value="<?= $value ?>" <?= $perPage == $value ? 'selected' : '' ?>><?= $value ?>件</option>
+                    <option value="<?= $value ?>" <?= $perPage == $value ? 'selected' : '' ?>><?= $value ?> items</option>
                     <?php endforeach; ?>
                 </select>
             </form>
@@ -391,19 +391,19 @@ switch ($action) {
         </div>
     </div>
 
-    <!-- ページネーション -->
+    <!-- Pagination -->
     <?php if ($pagination['total_pages'] > 1): ?>
-    <nav aria-label="ページナビゲーション">
+    <nav aria-label="Page navigation">
         <ul class="pagination justify-content-center">
-            <!-- 前へボタン -->
+            <!-- Previous button -->
             <li class="page-item <?= !$pagination['has_previous'] ? 'disabled' : '' ?>">
-                <a class="page-link" href="<?= $pagination['has_previous'] ? 'knowledge.php?action=list&page=' . ($page - 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . (isset($_GET['group_id']) && $_GET['group_id'] !== '' ? '&group_id=' . h($_GET['group_id']) : '') : '#' ?>" aria-label="前のページ" <?= !$pagination['has_previous'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
+                <a class="page-link" href="<?= $pagination['has_previous'] ? 'knowledge.php?action=list&page=' . ($page - 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . (isset($_GET['group_id']) && $_GET['group_id'] !== '' ? '&group_id=' . h($_GET['group_id']) : '') : '#' ?>" aria-label="Previous page" <?= !$pagination['has_previous'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
                     <span aria-hidden="true">&laquo;</span>
-                    <span class="visually-hidden">前のページ</span>
+                    <span class="visually-hidden">Previous page</span>
                 </a>
             </li>
 
-            <!-- ページ番号 -->
+            <!-- Page numbers -->
             <?php foreach ($pagination['pages'] as $p): ?>
                 <?php if ($p === '...'): ?>
                     <li class="page-item disabled">
@@ -418,27 +418,27 @@ switch ($action) {
                 <?php endif; ?>
             <?php endforeach; ?>
 
-            <!-- 次へボタン -->
+            <!-- Next button -->
             <li class="page-item <?= !$pagination['has_next'] ? 'disabled' : '' ?>">
-                <a class="page-link" href="<?= $pagination['has_next'] ? 'knowledge.php?action=list&page=' . ($page + 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . (isset($_GET['group_id']) && $_GET['group_id'] !== '' ? '&group_id=' . h($_GET['group_id']) : '') : '#' ?>" aria-label="次のページ" <?= !$pagination['has_next'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
+                <a class="page-link" href="<?= $pagination['has_next'] ? 'knowledge.php?action=list&page=' . ($page + 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . (isset($_GET['group_id']) && $_GET['group_id'] !== '' ? '&group_id=' . h($_GET['group_id']) : '') : '#' ?>" aria-label="Next page" <?= !$pagination['has_next'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
                     <span aria-hidden="true">&raquo;</span>
-                    <span class="visually-hidden">次のページ</span>
+                    <span class="visually-hidden">Next page</span>
                 </a>
             </li>
         </ul>
     </nav>
 
-    <!-- ページ番号直接入力フォーム -->
+    <!-- Direct page number input form -->
     <div class="text-center mt-3">
         <form class="d-inline-flex align-items-center" method="GET" action="knowledge.php">
             <input type="hidden" name="action" value="list">
             <input type="hidden" name="search" value="<?= h($searchTerm) ?>">
             <input type="hidden" name="group_id" value="<?= h($groupId) ?>">
             <input type="hidden" name="per_page" value="<?= $perPage ?>">
-            <label for="pageInput" class="me-2">ページ指定:</label>
+            <label for="pageInput" class="me-2">Go to page:</label>
             <input type="number" id="pageInput" name="page" class="form-control form-control-sm me-2" style="width: 80px;" min="1" max="<?= $pagination['total_pages'] ?>" value="<?= $page ?>">
-            <button type="submit" class="btn btn-sm btn-outline-primary">移動</button>
-            <span class="ms-2">/ <?= $pagination['total_pages'] ?>ページ</span>
+            <button type="submit" class="btn btn-sm btn-outline-primary">Go</button>
+            <span class="ms-2">/ <?= $pagination['total_pages'] ?> pages</span>
         </form>
     </div>
     <?php endif; ?>
@@ -447,7 +447,7 @@ switch ($action) {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
     $(document).ready(function() {
-        // グループエクスポート機能
+        // Group export function
         $('#exportGroupButton').click(function(e) {
             e.preventDefault();
             const groupId = $(this).data('group-id');
@@ -456,7 +456,7 @@ switch ($action) {
                 .then(response => {
                     if (!response.ok) {
                         return response.json().then(data => {
-                            throw new Error(data.message || '不明なエラーが発生しました');
+                            throw new Error(data.message || 'An unknown error has occurred');
                         });
                     }
                     return response.blob();
@@ -480,22 +480,22 @@ switch ($action) {
 
 <!-- 詳細表示画面 -->
 <?php elseif ($action === 'view'): ?>
-    <h1 class="mb-4">ナレッジ詳細</h1>
+    <h1 class="mb-4">Knowledge Details</h1>
     
     <div class="card mb-4">
         <div class="card-body">
             <h5 class="card-title"><?= h($knowledge['title']) ?></h5>
             
             <div class="mb-3">
-                <h6>親ナレッジ/プレーンナレッジ</h6>
+                <h6>Parent Knowledge/Plain Knowledge</h6>
                 <p>
                     <?php if ($knowledge['parent_type'] === 'record'): ?>
-                        <span class="badge bg-info">プレーン</span>
+                        <span class="badge bg-info">Plain</span>
                         <a href="record.php?action=view&id=<?= h($knowledge['parent_id']) ?>">
                             <?= h($knowledge['parent_title']) ?>
                         </a>
                     <?php else: ?>
-                        <span class="badge bg-success">ナレッジ</span>
+                        <span class="badge bg-success">Knowledge</span>
                         <a href="knowledge.php?action=view&id=<?= h($knowledge['parent_id']) ?>">
                             <?= h($knowledge['parent_title']) ?>
                         </a>
@@ -504,7 +504,7 @@ switch ($action) {
             </div>
 
             <div class="mb-3">
-                <h6>使用プロンプト</h6>
+                <h6>Used Prompt</h6>
                 <p>
                     <?php if ($knowledge['prompt_id']): ?>
                         <a href="prompts.php?action=view&id=<?= h($knowledge['prompt_id']) ?>">
@@ -529,24 +529,24 @@ switch ($action) {
             </div>
 
             <div class="mb-3">
-                <h6>グループ</h6>
+                <h6>Group</h6>
                 <p>
                     <?php if ($knowledge['group_id']): ?>
                         <?= h($knowledge['group_id']) ?>: <?= h($knowledge['group_name']) ?>
                     <?php else: ?>
-                        （グループ無し）
+                        (No Group)
                     <?php endif; ?>
                 </p>
             </div>
 
             <div class="mb-3">
                 <h6>Reference</h6>
-                <p><?= !empty($knowledge['reference']) ? nl2br(h($knowledge['reference'])) : '（登録なし）' ?></p>
+                <p><?= !empty($knowledge['reference']) ? nl2br(h($knowledge['reference'])) : '(Not Registered)' ?></p>
             </div>
             
             <!-- Knowledge化タスク作成フォーム -->
             <div class="mt-4 border-top pt-4">
-                <h6>Knowledge化タスク作成</h6>
+                <h6>Create Knowledge Task</h6>
                 <form id="taskForm" class="mt-3">
                     <input type="hidden" name="action" value="create_task">
                     <input type="hidden" name="source_type" value="knowledge">
@@ -554,9 +554,9 @@ switch ($action) {
                     <input type="hidden" name="source_text" value="<?= h($knowledge['answer']) ?>">
                     
                     <div class="mb-3">
-                        <label for="prompt_id" class="form-label">使用プロンプト</label>
+                        <label for="prompt_id" class="form-label">Used Prompt</label>
                         <select class="form-control" id="prompt_id" name="prompt_id" required>
-                            <option value="">選択してください</option>
+                            <option value="">Please select</option>
                             <?php
                             $stmt = $pdo->query("
                                 SELECT id, title, content
@@ -576,17 +576,17 @@ switch ($action) {
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">プロンプト内容プレビュー</label>
+                        <label class="form-label">Prompt Content Preview</label>
                         <pre class="border p-3 bg-light" id="prompt_preview"></pre>
                     </div>
                     
-                    <button type="button" id="createTaskButton" class="btn btn-primary">タスク作成</button>
+                    <button type="button" id="createTaskButton" class="btn btn-primary">Create Task</button>
                 </form>
             </div>
             
             <?php if ($childKnowledge): ?>
             <div class="mb-3">
-                <h6>子ナレッジ</h6>
+                <h6>Child Knowledge</h6>
                 <ul>
                     <?php foreach ($childKnowledge as $child): ?>
                     <li>
@@ -601,15 +601,15 @@ switch ($action) {
         </div>
     </div>
 
-    <!-- 履歴表示 -->
-    <h3 class="mb-3">変更履歴</h3>
+    <!-- History display -->
+    <h3 class="mb-3">Change History</h3>
     <table class="table">
         <thead>
             <tr>
-                <th>変更日時</th>
-                <th>タイトル</th>
-                <th>内容</th>
-                <th>変更者</th>
+                <th>Change Date</th>
+                <th>Title</th>
+                <th>Content</th>
+                <th>Modified By</th>
             </tr>
         </thead>
         <tbody>
@@ -619,7 +619,7 @@ switch ($action) {
                 <td><?= h($entry['title']) ?></td>
                 <td>
                     <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#historyModal<?= h($entry['id']) ?>">
-                        内容を表示
+                        Show Content
                     </button>
                     
                     <!-- 履歴内容モーダル -->
@@ -627,11 +627,11 @@ switch ($action) {
                         <div class="modal-dialog modal-lg">
                             <div class="modal-content">
                                 <div class="modal-header">
-                                    <h5 class="modal-title">履歴詳細</h5>
+                                    <h5 class="modal-title">History Details</h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <h6>タイトル</h6>
+                                    <h6>Title</h6>
                                     <p><?= h($entry['title']) ?></p>
                                     <h6>Question</h6>
                                     <p><?= nl2br(h($entry['question'])) ?></p>
@@ -642,11 +642,11 @@ switch ($action) {
                                     <p><a href="<?= h($entry['reference']) ?>" target="_blank"><?= h($entry['reference']) ?></a></p>
                                     <?php endif; ?>
                                     <p class="text-muted">
-                                        変更日時: <?= h(date('Y/m/d H:i', strtotime($entry['created_at']))) ?>
+                                        Change Date: <?= h(date('Y/m/d H:i', strtotime($entry['created_at']))) ?>
                                     </p>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                 </div>
                             </div>
                         </div>
@@ -659,10 +659,10 @@ switch ($action) {
     </table>
 
     <div class="mb-4">
-        <a href="knowledge.php?action=list" class="btn btn-secondary">戻る</a>
-        <a href="knowledge.php?action=edit&id=<?= h($knowledge['id']) ?>" 
-           class="btn btn-warning">編集</a>
-        <button id="exportButton" class="btn btn-success" data-knowledge-id="<?= h($knowledge['id']) ?>">エクスポート</button>
+        <a href="knowledge.php?action=list" class="btn btn-secondary">Back</a>
+        <a href="knowledge.php?action=edit&id=<?= h($knowledge['id']) ?>"
+           class="btn btn-warning">Edit</a>
+        <button id="exportButton" class="btn btn-success" data-knowledge-id="<?= h($knowledge['id']) ?>">Export</button>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -692,13 +692,13 @@ switch ($action) {
                     }
                 },
                 error: function() {
-                    alert('通信エラーが発生しました。');
+                    alert('A communication error has occurred.');
                     $button.prop('disabled', false);
                 }
             });
         });
 
-        // 個別ナレッジエクスポート機能
+        // Individual knowledge export function
         $('#exportButton').click(function(e) {
             e.preventDefault();
             const knowledgeId = $(this).data('knowledge-id');
@@ -707,7 +707,7 @@ switch ($action) {
                 .then(response => {
                     if (!response.ok) {
                         return response.json().then(data => {
-                            throw new Error(data.message || '不明なエラーが発生しました');
+                            throw new Error(data.message || 'An unknown error has occurred');
                         });
                     }
                     return response.blob();
@@ -732,31 +732,31 @@ switch ($action) {
 <!-- 作成・編集画面 -->
 <?php else: ?>
     <h1 class="mb-4">
-        <?= $action === 'create' ? 'ナレッジ作成' : 'ナレッジ編集' ?>
+        <?= $action === 'create' ? 'Create Knowledge' : 'Edit Knowledge' ?>
     </h1>
     
     <form method="POST" class="needs-validation" novalidate>
         <input type="hidden" name="original_search" value="<?= h($_GET['search'] ?? '') ?>">
         <input type="hidden" name="original_group_id" value="<?= h($_GET['group_id'] ?? '') ?>">
         <div class="mb-3">
-            <label for="title" class="form-label">タイトル</label>
+            <label for="title" class="form-label">Title</label>
             <input type="text" class="form-control" id="title" name="title" 
                    value="<?= isset($knowledge) ? h($knowledge['title']) : '' ?>" required>
         </div>
         
         <div class="mb-3">
-            <label class="form-label">親ナレッジタイプ</label>
+            <label class="form-label">Parent Knowledge Type</label>
             <p>
                 <?php if ($knowledge['parent_type'] === 'record'): ?>
-                    <span class="badge bg-info">プレーンナレッジ</span>
+                    <span class="badge bg-info">Plain Knowledge</span>
                 <?php else: ?>
-                    <span class="badge bg-success">ナレッジ</span>
+                    <span class="badge bg-success">Knowledge</span>
                 <?php endif; ?>
             </p>
         </div>
         
         <div class="mb-3">
-            <label class="form-label">親ナレッジ/プレーンナレッジ</label>
+            <label class="form-label">Parent Knowledge/Plain Knowledge</label>
             <p>
                 <?php if ($knowledge['parent_type'] === 'record'): ?>
                     <a href="record.php?action=view&id=<?= h($knowledge['parent_id']) ?>">
@@ -771,7 +771,7 @@ switch ($action) {
         </div>
 
         <div class="mb-3">
-            <label class="form-label">使用プロンプト</label>
+            <label class="form-label">Used Prompt</label>
             <p>
                 <?php if ($knowledge['prompt_id']): ?>
                     <a href="prompts.php?action=view&id=<?= h($knowledge['prompt_id']) ?>">
@@ -799,8 +799,8 @@ switch ($action) {
                    value="<?= isset($knowledge) ? h($knowledge['reference']) : '' ?>">
         </div>
         
-        <button type="submit" class="btn btn-primary">保存</button>
-        <a href="knowledge.php?action=list" class="btn btn-secondary">キャンセル</a>
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a href="knowledge.php?action=list" class="btn btn-secondary">Cancel</a>
     </form>
 <?php endif; ?>
 

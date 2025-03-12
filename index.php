@@ -38,8 +38,8 @@ if ($tasksTableExists) {
 
 <div class="row mb-4">
     <div class="col">
-        <h1><?= SYSTEM_NAME ?> ダッシュボード</h1>
-        <p class="text-muted">ナレッジ管理システムへようこそ</p>
+        <h1><?= SYSTEM_NAME ?> Dashboard</h1>
+                <p class="text-muted">Welcome to the Knowledge Management System</p>
     </div>
 </div>
 
@@ -48,44 +48,44 @@ if ($tasksTableExists) {
     <div class="col-md-3">
         <div class="card bg-primary text-white">
             <div class="card-body">
-                <h5 class="card-title">プレーンナレッジ</h5>
+                <h5 class="card-title">Plain Knowledge</h5>
                 <a href="record.php?action=list" class="text-white text-decoration-none">
                     <p class="card-text display-4"><?= h($plainCount) ?></p>
                 </a>
-                <p class="card-text">登録件数</p>
+                <p class="card-text">Registered Items</p>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card bg-success text-white">
             <div class="card-body">
-                <h5 class="card-title">ナレッジ</h5>
+                <h5 class="card-title">Knowledge</h5>
                 <a href="knowledge.php?action=list" class="text-white text-decoration-none">
                     <p class="card-text display-4"><?= h($knowledgeCount) ?></p>
                 </a>
-                <p class="card-text">登録件数</p>
+                <p class="card-text">Registered Items</p>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card bg-info text-white">
             <div class="card-body">
-                <h5 class="card-title">プロンプト</h5>
+                <h5 class="card-title">Prompts</h5>
                 <a href="prompts.php?action=list" class="text-white text-decoration-none">
                     <p class="card-text display-4"><?= h($promptCount) ?></p>
                 </a>
-                <p class="card-text">登録件数</p>
+                <p class="card-text">Registered Items</p>
             </div>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card bg-warning text-white">
             <div class="card-body">
-                <h5 class="card-title">残タスク</h5>
+                <h5 class="card-title">Pending Tasks</h5>
                 <a href="tasks.php" class="text-white text-decoration-none">
                     <p class="card-text display-4"><?= h($taskStats['pending'] ?? 0) ?></p>
                 </a>
-                <p class="card-text">未処理タスク数</p>
+                <p class="card-text">Unprocessed Tasks</p>
             </div>
         </div>
     </div>
@@ -97,12 +97,12 @@ if ($tasksTableExists) {
     <div class="col-md-6 mb-4">
         <div class="card h-100">
             <div class="card-body">
-                <h5 class="card-title">プレーンナレッジ管理</h5>
-                <p class="card-text">元となるナレッジの管理を行います。</p>
+                <h5 class="card-title">Plain Knowledge Management</h5>
+                <p class="card-text">Manage source knowledge items.</p>
                 <div>
-                    <a href="record.php?action=list" class="btn btn-primary me-2">一覧表示</a>
-                    <a href="record.php?action=create" class="btn btn-outline-primary me-2">新規作成</a>
-                    <a href="import.php" class="btn btn-outline-secondary me-2">インポート</a>
+                    <a href="record.php?action=list" class="btn btn-primary me-2">List</a>
+                    <a href="record.php?action=create" class="btn btn-outline-primary me-2">Create New</a>
+                    <a href="import.php" class="btn btn-outline-secondary me-2">Import</a>
                 </div>
             </div>
         </div>
@@ -111,12 +111,12 @@ if ($tasksTableExists) {
     <div class="col-md-6 mb-4">
         <div class="card h-100">
             <div class="card-body">
-                <h5 class="card-title">ナレッジ管理</h5>
-                <p class="card-text">生成されたナレッジの管理を行います。</p>
+                <h5 class="card-title">Knowledge Management</h5>
+                <p class="card-text">Manage generated knowledge items.</p>
                 <div>
-                    <a href="knowledge.php?action=list" class="btn btn-success me-2">一覧表示</a>
-                    <a href="knowledge.php?action=create" class="btn btn-outline-success me-2">新規作成</a>
-                    <a href="import.php" class="btn btn-outline-secondary me-2">インポート</a>
+                    <a href="knowledge.php?action=list" class="btn btn-success me-2">List</a>
+                    <a href="knowledge.php?action=create" class="btn btn-outline-success me-2">Create New</a>
+                    <a href="import.php" class="btn btn-outline-secondary me-2">Import</a>
                 </div>
             </div>
         </div>
@@ -125,11 +125,11 @@ if ($tasksTableExists) {
     <div class="col-md-6 mb-4">
         <div class="card h-100">
             <div class="card-body">
-                <h5 class="card-title">プロンプト管理</h5>
-                <p class="card-text">ナレッジ生成用のプロンプトを管理します。</p>
+                <h5 class="card-title">Prompt Management</h5>
+                <p class="card-text">Manage prompts for knowledge generation.</p>
                 <div>
-                    <a href="prompts.php?action=list" class="btn btn-info me-2">一覧表示</a>
-                    <a href="prompts.php?action=create" class="btn btn-outline-info me-2">新規作成</a>
+                    <a href="prompts.php?action=list" class="btn btn-info me-2">List</a>
+                    <a href="prompts.php?action=create" class="btn btn-outline-info me-2">Create New</a>
                 </div>
             </div>
         </div>
@@ -138,13 +138,13 @@ if ($tasksTableExists) {
     <div class="col-md-6 mb-4">
         <div class="card h-100">
             <div class="card-body">
-                <h5 class="card-title">履歴管理</h5>
-                <p class="card-text">各種データの変更履歴を確認できます。</p>
+                <h5 class="card-title">History Management</h5>
+                <p class="card-text">View change history for various data types.</p>
                 <div>
                     <div class="btn-group">
-                        <a href="export.php?type=history&target=record" class="btn btn-outline-secondary">プレーンナレッジ履歴</a>
-                        <a href="export.php?type=history&target=knowledge" class="btn btn-outline-secondary">ナレッジ履歴</a>
-                        <a href="export.php?type=history&target=prompt" class="btn btn-outline-secondary">プロンプト履歴</a>
+                        <a href="export.php?type=history&target=record" class="btn btn-outline-secondary">Plain Knowledge History</a>
+                        <a href="export.php?type=history&target=knowledge" class="btn btn-outline-secondary">Knowledge History</a>
+                        <a href="export.php?type=history&target=prompt" class="btn btn-outline-secondary">Prompt History</a>
                     </div>
                 </div>
             </div>
@@ -158,7 +158,7 @@ if ($tasksTableExists) {
     <div class="col-md-6 mb-4">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">最近更新されたプレーンナレッジ</h5>
+                <h5 class="card-title">Recently Updated Plain Knowledge</h5>
                 <div class="list-group list-group-flush">
                     <?php
                     $stmt = $pdo->query("
@@ -186,7 +186,7 @@ if ($tasksTableExists) {
     <div class="col-md-6 mb-4">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">最近更新されたナレッジ</h5>
+                <h5 class="card-title">Recently Updated Knowledge</h5>
                 <div class="list-group list-group-flush">
                     <?php
                     $stmt = $pdo->query("
@@ -220,7 +220,7 @@ if ($tasksTableExists) {
     <div class="col-md-6">
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">タスクステータス</h5>
+                <h5 class="card-title">Task Status</h5>
                 <div class="row text-center">
                     <div class="col">
                         <div class="badge bg-warning mb-2">Pending</div>
@@ -300,12 +300,12 @@ function updatePendingTasksCount() {
             // グローバルメニューの残タスク表示も更新
             const pendingTasksCountElement = document.getElementById('pending-tasks-count');
             if (pendingTasksCountElement) {
-                pendingTasksCountElement.textContent = `残タスク：${data.count > 0 ? data.count + '件' : '無し'}`;
+                pendingTasksCountElement.textContent = `Pending Tasks: ${data.count > 0 ? data.count + ' items' : 'None'}`;
             }
             
             // 前の状態が0でなく、新しい状態が0の場合にアラートを表示
             if (currentCount > 0 && data.count === 0) {
-                alert('タスクが完了しました');
+                alert('Tasks have been completed');
             }
             
             // 残タスク数が0でない場合は5秒後に再度更新
@@ -315,7 +315,7 @@ function updatePendingTasksCount() {
         }
     })
     .catch(error => {
-        console.error('残タスク数の取得に失敗しました:', error);
+        console.error('Failed to get pending task count:', error);
     });
 }
 

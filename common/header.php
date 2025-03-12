@@ -3,7 +3,7 @@
 require_once __DIR__ . '/auth.php';
 ?>
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,13 +32,13 @@ require_once __DIR__ . '/auth.php';
                         <a class="nav-link" href="<?= BASE_URL ?>/prompts.php">プロンプト管理</a>
                     </li> -->
                     <li class="nav-item">
-                        <a class="nav-link" href="<?= BASE_URL ?>/groups.php">グループ管理</a>
+                        <a class="nav-link" href="<?= BASE_URL ?>/groups.php">Group Management</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="<?= BASE_URL ?>/prompts.php">プロンプト管理</a>
+                        <a class="nav-link" href="<?= BASE_URL ?>/prompts.php">Prompt Management</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="<?= BASE_URL ?>/tasks.php">タスク管理</a>
+                        <a class="nav-link" href="<?= BASE_URL ?>/tasks.php">Task Management</a>
                     </li>
                     <li class="nav-item">
                         <?php
@@ -59,7 +59,7 @@ require_once __DIR__ . '/auth.php';
                         }
                         ?>
                         <span class="nav-link" id="pending-tasks-count">
-                            残タスク：<?= $pendingTasksCount > 0 ? "{$pendingTasksCount}件" : "無し" ?>
+                            Pending Tasks: <?= $pendingTasksCount > 0 ? "{$pendingTasksCount} items" : "None" ?>
                         </span>
                     </li>
                 </ul>
@@ -71,7 +71,7 @@ require_once __DIR__ . '/auth.php';
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="<?= BASE_URL ?>/common/logout.php">
-                            <i class="fas fa-sign-out-alt"></i> ログアウト
+                            <i class="fas fa-sign-out-alt"></i> Logout
                         </a>
                     </li>
                 </ul>

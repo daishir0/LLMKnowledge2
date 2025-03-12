@@ -8,12 +8,12 @@ require_once APP_ROOT . '/common/header.php';
 $action = $_GET['action'] ?? 'list';
 $searchTerm = $_GET['search'] ?? '';
 $page = max(1, intval($_GET['page'] ?? 1));
-$perPage = isset($_GET['per_page']) ? max(10, min(100, intval($_GET['per_page']))) : 10; // 10-100の範囲で制限
+$perPage = isset($_GET['per_page']) ? max(10, min(100, intval($_GET['per_page']))) : 10; // Limited to range 10-100
 
 switch ($action) {
     case 'delete_pending':
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            // statusが'pending'のタスクのdeletedフラグを1に設定
+            // Set deleted flag to 1 for tasks with 'pending' status
             $stmt = $pdo->prepare("
                 UPDATE tasks
                 SET deleted = 1,
@@ -24,15 +24,15 @@ switch ($action) {
             $stmt->execute();
             $affected = $stmt->rowcount();
             
-            // JSON形式でレスポンスを返す
+            // Return response in JSON format
             header('Content-Type: application/json');
-            echo json_encode(['success' => true, 'message' => "{$affected}件のPendingタスクを削除しました。"]);
+            echo json_encode(['success' => true, 'message' => "Deleted {$affected} pending tasks."]);
             exit;
         }
         break;
         
     case 'list':
-        // 検索処理
+        // Search processing
         if ($searchTerm) {
             $stmt = $pdo->prepare("
                 SELECT t.*, 
@@ -57,11 +57,11 @@ switch ($action) {
             $tasks = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $total = count($tasks);
         } else {
-            // 総件数の取得
+            // Get total count
             $stmt = $pdo->query("SELECT COUNT(*) FROM tasks WHERE deleted = 0");
             $total = $stmt->fetchColumn();
             
-            // タスク一覧の取得
+            // Get task list
             $stmt = $pdo->prepare("
                 SELECT t.*, 
                        CASE 
@@ -123,42 +123,42 @@ switch ($action) {
         break;
 }
 ?>
-<!-- リスト表示画面 -->
+<!-- List display screen -->
 <?php if ($action === 'list'): ?>
-    <h1 class="mb-4">タスク管理</h1>
+    <h1 class="mb-4">Task Management</h1>
     
     <div class="row mb-4">
         <div class="col">
             <form class="d-flex" method="GET" action="tasks.php">
                 <input type="hidden" name="action" value="list">
                 <input type="search" name="search" class="form-control me-2"
-                       value="<?= h($searchTerm) ?>" placeholder="検索...">
-                <button class="btn btn-outline-primary" type="submit">検索</button>
+                       value="<?= h($searchTerm) ?>" placeholder="Search...">
+                <button class="btn btn-outline-primary" type="submit">Search</button>
             </form>
         </div>
         <div class="col text-end">
-            <button id="deletePendingTasksBtn" class="btn btn-danger">Pendingのタスクを削除する</button>
+            <button id="deletePendingTasksBtn" class="btn btn-danger">Delete Pending Tasks</button>
         </div>
     </div>
 
     <div class="table-responsive">
         <table class="table table-striped">
             <colgroup>
-                <col style="min-width: 80px; width: 80px;">  <!-- ID列 -->
-                <col style="min-width: 200px; max-width: 300px;">  <!-- ソース列 -->
-                <col style="min-width: 200px; max-width: 300px;">  <!-- プロンプト列 -->
-                <col style="min-width: 120px; width: 120px;">  <!-- ステータス列 -->
-                <col style="min-width: 120px; width: 120px;">  <!-- 作成者列 -->
-                <col style="min-width: 120px; width: 120px;">  <!-- 作成日時列 -->
+                <col style="min-width: 80px; width: 80px;">  <!-- ID column -->
+                <col style="min-width: 200px; max-width: 300px;">  <!-- Source column -->
+                <col style="min-width: 200px; max-width: 300px;">  <!-- Prompt column -->
+                <col style="min-width: 120px; width: 120px;">  <!-- Status column -->
+                <col style="min-width: 120px; width: 120px;">  <!-- Creator column -->
+                <col style="min-width: 120px; width: 120px;">  <!-- Created date column -->
             </colgroup>
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>ソース</th>
-                    <th>プロンプト</th>
-                    <th>ステータス</th>
-                    <th class="d-none d-md-table-cell">作成者</th>
-                    <th class="d-none d-md-table-cell">作成日時</th>
+                    <th>Source</th>
+                    <th>Prompt</th>
+                    <th>Status</th>
+                    <th class="d-none d-md-table-cell">Creator</th>
+                    <th class="d-none d-md-table-cell">Created</th>
                 </tr>
             </thead>
             <tbody>
@@ -167,9 +167,9 @@ switch ($action) {
                 <td><?= h($task['id']) ?></td>
                 <td style="max-width: 300px;">
                     <?php if ($task['source_type'] === 'record'): ?>
-                        <span class="badge bg-info me-1">プレーン</span>
+                        <span class="badge bg-info me-1">Plain</span>
                     <?php else: ?>
-                        <span class="badge bg-success me-1">ナレッジ</span>
+                        <span class="badge bg-success me-1">Knowledge</span>
                     <?php endif; ?>
                     <span class="text-truncate d-inline-block" style="max-width: calc(100% - 80px); vertical-align: middle;" title="<?= h($task['source_title']) ?>">
                         <a href="tasks.php?action=view&id=<?= h($task['id']) ?>" class="text-truncate d-block">
@@ -203,29 +203,29 @@ switch ($action) {
     </div>
 
     <style>
-        /* テーブルセルのスタイル */
+        /* Table cell styles */
         .table td {
             vertical-align: middle;
         }
         
-        /* バッジの右マージン */
+        /* Badge right margin */
         .badge {
             margin-right: 8px;
         }
         
-        /* リンクテキストが省略される場合でもホバー可能に */
+        /* Make truncated link text hoverable */
         .text-truncate a {
             display: block;
             width: 100%;
         }
         
-        /* ツールチップのスタイル */
+        /* Tooltip styles */
         [title] {
             position: relative;
             cursor: help;
         }
 
-        /* スマートフォンでの表示調整 */
+        /* Smartphone display adjustments */
         @media (max-width: 576px) {
             .table td {
                 white-space: normal;
@@ -237,16 +237,16 @@ switch ($action) {
         }
     </style>
 
-    <!-- 表示件数選択 -->
+    <!-- Items per page selection -->
     <div class="row mb-3">
         <div class="col-auto">
             <form class="d-flex align-items-center" method="GET" action="tasks.php">
                 <input type="hidden" name="action" value="list">
                 <input type="hidden" name="search" value="<?= h($searchTerm) ?>">
-                <label for="perPage" class="me-2">表示件数:</label>
+                <label for="perPage" class="me-2">Items per page:</label>
                 <select id="perPage" name="per_page" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
                     <?php foreach ([10, 20, 50, 100] as $value): ?>
-                    <option value="<?= $value ?>" <?= $perPage == $value ? 'selected' : '' ?>><?= $value ?>件</option>
+                    <option value="<?= $value ?>" <?= $perPage == $value ? 'selected' : '' ?>><?= $value ?> items</option>
                     <?php endforeach; ?>
                 </select>
             </form>
@@ -256,19 +256,19 @@ switch ($action) {
         </div>
     </div>
 
-    <!-- ページネーション -->
+    <!-- Pagination -->
     <?php if ($pagination['total_pages'] > 1): ?>
-    <nav aria-label="ページナビゲーション">
+    <nav aria-label="Page navigation">
         <ul class="pagination justify-content-center">
-            <!-- 前へボタン -->
+            <!-- Previous button -->
             <li class="page-item <?= !$pagination['has_previous'] ? 'disabled' : '' ?>">
-                <a class="page-link" href="<?= $pagination['has_previous'] ? 'tasks.php?action=list&page=' . ($page - 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . '&per_page=' . $perPage : '#' ?>" aria-label="前のページ" <?= !$pagination['has_previous'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
+                <a class="page-link" href="<?= $pagination['has_previous'] ? 'tasks.php?action=list&page=' . ($page - 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . '&per_page=' . $perPage : '#' ?>" aria-label="Previous page" <?= !$pagination['has_previous'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
                     <span aria-hidden="true">&laquo;</span>
-                    <span class="visually-hidden">前のページ</span>
+                    <span class="visually-hidden">Previous page</span>
                 </a>
             </li>
 
-            <!-- ページ番号 -->
+            <!-- Page numbers -->
             <?php foreach ($pagination['pages'] as $p): ?>
                 <?php if ($p === '...'): ?>
                     <li class="page-item disabled">
@@ -283,47 +283,47 @@ switch ($action) {
                 <?php endif; ?>
             <?php endforeach; ?>
 
-            <!-- 次へボタン -->
+            <!-- Next button -->
             <li class="page-item <?= !$pagination['has_next'] ? 'disabled' : '' ?>">
-                <a class="page-link" href="<?= $pagination['has_next'] ? 'tasks.php?action=list&page=' . ($page + 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . '&per_page=' . $perPage : '#' ?>" aria-label="次のページ" <?= !$pagination['has_next'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
+                <a class="page-link" href="<?= $pagination['has_next'] ? 'tasks.php?action=list&page=' . ($page + 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . '&per_page=' . $perPage : '#' ?>" aria-label="Next page" <?= !$pagination['has_next'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
                     <span aria-hidden="true">&raquo;</span>
-                    <span class="visually-hidden">次のページ</span>
+                    <span class="visually-hidden">Next page</span>
                 </a>
             </li>
         </ul>
     </nav>
 
-    <!-- ページ番号直接入力フォーム -->
+    <!-- Direct page number input form -->
     <div class="text-center mt-3">
         <form class="d-inline-flex align-items-center" method="GET" action="tasks.php">
             <input type="hidden" name="action" value="list">
             <input type="hidden" name="search" value="<?= h($searchTerm) ?>">
             <input type="hidden" name="per_page" value="<?= $perPage ?>">
-            <label for="pageInput" class="me-2">ページ指定:</label>
+            <label for="pageInput" class="me-2">Go to page:</label>
             <input type="number" id="pageInput" name="page" class="form-control form-control-sm me-2" style="width: 80px;" min="1" max="<?= $pagination['total_pages'] ?>" value="<?= $page ?>">
-            <button type="submit" class="btn btn-sm btn-outline-primary">移動</button>
-            <span class="ms-2">/ <?= $pagination['total_pages'] ?>ページ</span>
+            <button type="submit" class="btn btn-sm btn-outline-primary">Go</button>
+            <span class="ms-2">/ <?= $pagination['total_pages'] ?> pages</span>
         </form>
     </div>
     <?php endif; ?>
 
-<!-- 詳細表示画面 -->
+<!-- Detail view screen -->
 <?php elseif ($action === 'view'): ?>
-    <h1 class="mb-4">タスク詳細</h1>
+    <h1 class="mb-4">Task Details</h1>
     
     <div class="card mb-4">
         <div class="card-body">
             <h5 class="card-title">
                 <?php if ($task['source_type'] === 'record'): ?>
-                    <span class="badge bg-info">プレーン</span>
+                    <span class="badge bg-info">Plain</span>
                 <?php else: ?>
-                    <span class="badge bg-success">ナレッジ</span>
+                    <span class="badge bg-success">Knowledge</span>
                 <?php endif; ?>
                 <?= h($task['source_title']) ?>
             </h5>
             
             <div class="mb-3">
-                <h6>ステータス</h6>
+                <h6>Status</h6>
                 <?php
                 $statusBadgeClass = [
                     'pending' => 'bg-warning',
@@ -339,26 +339,26 @@ switch ($action) {
             </div>
             
             <div class="mb-3">
-                <h6>ソーステキスト</h6>
+                <h6>Source Text</h6>
                 <pre class="border p-3 bg-light"><?= h($task['source_text']) ?></pre>
             </div>
             
             <div class="mb-3">
-                <h6>使用プロンプト</h6>
+                <h6>Used Prompt</h6>
                 <p><?= h($task['prompt_title']) ?></p>
                 <pre class="border p-3 bg-light"><?= h($task['prompt_content']) ?></pre>
             </div>
             
             <?php if ($task['error_message']): ?>
             <div class="mb-3">
-                <h6>エラーメッセージ</h6>
+                <h6>Error Message</h6>
                 <pre class="border p-3 bg-light text-danger"><?= h($task['error_message']) ?></pre>
             </div>
             <?php endif; ?>
             
             <?php if ($task['result_knowledge_id']): ?>
             <div class="mb-3">
-                <h6>生成されたナレッジ</h6>
+                <h6>Generated Knowledge</h6>
                 <p>
                     <a href="knowledge.php?action=view&id=<?= h($task['result_knowledge_id']) ?>">
                         <?= h($task['result_title']) ?>
@@ -368,24 +368,24 @@ switch ($action) {
             <?php endif; ?>
             
             <div class="mb-3">
-                <h6>作成情報</h6>
+                <h6>Creation Information</h6>
                 <p>
-                    作成者: <?= h($task['created_by']) ?><br>
-                    作成日時: <?= h($task['created_at']) ?><br>
-                    更新日時: <?= h($task['updated_at']) ?>
+                    Creator: <?= h($task['created_by']) ?><br>
+                    Created: <?= h($task['created_at']) ?><br>
+                    Updated: <?= h($task['updated_at']) ?>
                 </p>
             </div>
         </div>
     </div>
 
     <div class="mb-4">
-        <a href="tasks.php?action=list" class="btn btn-secondary">戻る</a>
+        <a href="tasks.php?action=list" class="btn btn-secondary">Back</a>
         <?php if ($task['status'] === 'pending'): ?>
             <form method="POST" action="tasks.php?action=cancel" class="d-inline">
                 <input type="hidden" name="id" value="<?= h($task['id']) ?>">
-                <button type="submit" class="btn btn-warning" 
-                        onclick="return confirm('このタスクをキャンセルしますか？')">
-                    キャンセル
+                <button type="submit" class="btn btn-warning"
+                        onclick="return confirm('Do you want to cancel this task?')">
+                    Cancel
                 </button>
             </form>
         <?php endif; ?>
@@ -393,16 +393,16 @@ switch ($action) {
 
 <?php endif; ?>
 
-<!-- JavaScriptコード -->
+<!-- JavaScript code -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Pendingタスク削除ボタンのイベントリスナー
+    // Event listener for the Delete Pending Tasks button
     const deletePendingBtn = document.getElementById('deletePendingTasksBtn');
     if (deletePendingBtn) {
         deletePendingBtn.addEventListener('click', function() {
-            // 確認ダイアログを表示
-            if (confirm('本当にすべてのPendingタスクを削除しますか？この操作は元に戻せません。')) {
-                // Ajaxリクエストを送信
+            // Display confirmation dialog
+            if (confirm('Are you sure you want to delete all pending tasks? This action cannot be undone.')) {
+                // Send Ajax request
                 fetch('tasks.php?action=delete_pending', {
                     method: 'POST',
                     headers: {
@@ -413,15 +413,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 .then(data => {
                     if (data.success) {
                         alert(data.message);
-                        // ページをリロード
+                        // Reload the page
                         window.location.reload();
                     } else {
-                        alert('エラーが発生しました: ' + data.message);
+                        alert('An error occurred: ' + data.message);
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('エラーが発生しました。');
+                    alert('An error occurred.');
                 });
             }
         });

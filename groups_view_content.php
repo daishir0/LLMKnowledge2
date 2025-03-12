@@ -1,6 +1,6 @@
 <?php defined('APP_ROOT') or die(); ?>
 
-<h1 class="mb-4">グループ詳細</h1>
+<h1 class="mb-4">Group Details</h1>
 
 <div class="card mb-4">
     <div class="card-body">
@@ -11,7 +11,7 @@
             <div class="col-md-6">
                 <div class="card bg-primary text-white">
                     <div class="card-body">
-                        <h6 class="card-title">プレーンナレッジ数</h6>
+                        <h6 class="card-title">Plain Knowledge Count</h6>
                         <a href="record.php?action=list&search=&group_id=<?= h($group['id']) ?>" class="text-white text-decoration-none">
                             <p class="card-text display-6"><?= h($group['record_count']) ?></p>
                         </a>
@@ -21,7 +21,7 @@
             <div class="col-md-6">
                 <div class="card bg-success text-white">
                     <div class="card-body">
-                        <h6 class="card-title">ナレッジ数</h6>
+                        <h6 class="card-title">Knowledge Count</h6>
                         <a href="knowledge.php?action=list&search=&group_id=<?= h($group['id']) ?>" class="text-white text-decoration-none">
                             <p class="card-text display-6"><?= h($group['knowledge_count']) ?></p>
                         </a>
@@ -31,54 +31,54 @@
         </div>
         
         <div class="mt-4 border-top pt-4">
-            <h6>プロンプト情報</h6>
+            <h6>Prompt Information</h6>
             <?php if (!empty($group['prompt_title'])): ?>
                 <p class="card-text">
-                    <strong>プロンプト名:</strong> <?= h($group['prompt_title']) ?>
+                    <strong>Prompt Name:</strong> <?= h($group['prompt_title']) ?>
                 </p>
                 <?php if (!empty($group['prompt_content'])): ?>
                 <div class="mt-2">
-                    <label class="form-label">プロンプト内容</label>
+                    <label class="form-label">Prompt Content</label>
                     <pre class="border p-3 bg-light"><?= h($group['prompt_content']) ?></pre>
                 </div>
                 <?php endif; ?>
             <?php else: ?>
-                <p class="card-text text-muted">登録されたプロンプトは無し</p>
+                <p class="card-text text-muted">No prompt registered</p>
             <?php endif; ?>
         </div>
 
         <div class="mt-4">
-            <h6>作成情報</h6>
+            <h6>Creation Information</h6>
             <p>
-                作成日時: <?= h($group['created_at']) ?><br>
-                更新日時: <?= h($group['updated_at']) ?>
+                Created: <?= h($group['created_at']) ?><br>
+                Updated: <?= h($group['updated_at']) ?>
             </p>
         </div>
     </div>
 </div>
 
-<!-- 紐づいているプレーンナレッジの一覧 -->
+<!-- List of plain knowledge linked to this group -->
 <div class="mt-5">
-    <h3>このグループに紐づいているプレーンナレッジ</h3>
+    <h3>Plain Knowledge Linked to This Group</h3>
     <?php
-    // 全体の件数を取得
+    // Get total count
     $total_stmt = $pdo->prepare("
         SELECT COUNT(*) FROM record
-        WHERE group_id = :group_id  
+        WHERE group_id = :group_id
         AND deleted = 0
     ");
     $total_stmt->execute([':group_id' => $_GET['id']]);
     $total_count = $total_stmt->fetchColumn();
     ?>
-    <p>全<?= h($total_count) ?>件中、最新3件を表示しています。全件は<a href="record.php?action=list&search=&group_id=<?= $_GET['id'] ?>">こちら</a>。</p>
+    <p>Showing the latest 3 out of <?= h($total_count) ?> items. View all items <a href="record.php?action=list&search=&group_id=<?= $_GET['id'] ?>">here</a>.</p>
     <div class="table-responsive">
         <table class="table">
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>タイトル</th>
+                    <th>Title</th>
                     <th>Reference</th>
-                    <th>更新日時</th>
+                    <th>Updated</th>
                 </tr>
             </thead>
             <tbody>
@@ -106,11 +106,11 @@
     </div>
 </div>
 
-<!-- 紐づいているナレッジの一覧 -->
+<!-- List of knowledge linked to this group -->
 <div class="mt-5">
-    <h3>このグループに紐づいているナレッジ</h3>
+    <h3>Knowledge Linked to This Group</h3>
     <?php
-    // 全体の件数を取得
+    // Get total count
     $total_knowledge_stmt = $pdo->prepare("
         SELECT COUNT(*) FROM knowledge
         WHERE group_id = :group_id
@@ -119,15 +119,15 @@
     $total_knowledge_stmt->execute([':group_id' => $_GET['id']]);
     $total_knowledge_count = $total_knowledge_stmt->fetchColumn();
     ?>
-    <p>全<?= h($total_knowledge_count) ?>件中、最新3件を表示しています。全件は<a href="knowledge.php?action=list&search=&group_id=<?= $_GET['id'] ?>">こちら</a>。</p>
+    <p>Showing the latest 3 out of <?= h($total_knowledge_count) ?> items. View all items <a href="knowledge.php?action=list&search=&group_id=<?= $_GET['id'] ?>">here</a>.</p>
     <div class="table-responsive">
         <table class="table">
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>タイトル</th>
+                    <th>Title</th>
                     <th>Reference</th>
-                    <th>更新日時</th>
+                    <th>Updated</th>
                 </tr>
             </thead>
             <tbody>
@@ -155,22 +155,22 @@
     </div>
 </div>
 
-<!-- データコレクター部分 -->
+<!-- Data collector section -->
 <div class="mt-5 mb-5">
-    <h3>データコレクター</h3>
+    <h3>Data Collector</h3>
     <div class="card">
         <div class="card-body">
-            <p class="card-text">このグループの、プレーンナレッジを収集するプログラム（データコレクター）と設定ファイルです。同じディレクトリに置いて実行してください。</p>
+            <p class="card-text">This is the program (Data Collector) and configuration file for collecting plain knowledge for this group. Place them in the same directory and run.</p>
 
-            <a href="client/dist/data_collector.exe" 
+            <a href="client/dist/data_collector.exe"
                class="btn btn-primary"
                download>
-                プログラムをダウンロード
+                Download Program
             </a>
 
-            <a href="common/export_client_yaml.php?group_id=<?= h($group['id']) ?>" 
+            <a href="common/export_client_yaml.php?group_id=<?= h($group['id']) ?>"
                class="btn btn-primary">
-                設定ファイルをダウンロード
+                Download Configuration File
             </a>
         </div>
     </div>

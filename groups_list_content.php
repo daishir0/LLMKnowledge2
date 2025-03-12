@@ -1,6 +1,6 @@
 <?php defined('APP_ROOT') or die(); ?>
 
-<!-- 検索結果のグループIDを保持するhidden要素（昇順に並べ替え） -->
+<!-- Hidden element to store group IDs from search results (sorted in ascending order) -->
 <?php
 $groupIds = array_column($groups, 'id');
 sort($groupIds, SORT_NUMERIC); // 数値として昇順に並べ替え
@@ -10,23 +10,23 @@ sort($groupIds, SORT_NUMERIC); // 数値として昇順に並べ替え
 <div class="table-responsive">
     <table class="table table-striped">
         <colgroup>
-            <col style="min-width: 80px; width: 80px;">  <!-- ID列 -->
-            <col style="min-width: 150px; max-width: 200px;">  <!-- グループ名列 -->
-            <col style="min-width: 200px; max-width: 300px;">  <!-- 説明列 -->
-            <col style="min-width: 150px; max-width: 200px;">  <!-- プロンプト列 -->
-            <col style="min-width: 120px; width: 120px;">  <!-- 作成日時列 -->
-            <col style="min-width: 120px; width: 120px;">  <!-- 更新日時列 -->
-            <col style="min-width: 300px; width: 300px;">  <!-- 操作列 -->
+            <col style="min-width: 80px; width: 80px;">  <!-- ID column -->
+            <col style="min-width: 150px; max-width: 200px;">  <!-- Group name column -->
+            <col style="min-width: 200px; max-width: 300px;">  <!-- Description column -->
+            <col style="min-width: 150px; max-width: 200px;">  <!-- Prompt column -->
+            <col style="min-width: 120px; width: 120px;">  <!-- Created date column -->
+            <col style="min-width: 120px; width: 120px;">  <!-- Updated date column -->
+            <col style="min-width: 300px; width: 300px;">  <!-- Actions column -->
         </colgroup>
         <thead>
             <tr>
                 <th>ID</th>
-                <th>グループ名</th>
-                <th>説明</th>
-                <th>プロンプト</th>
-                <th class="d-none d-md-table-cell">作成日時</th>
-                <th class="d-none d-md-table-cell">更新日時</th>
-                <th>操作</th>
+                <th>Group Name</th>
+                <th>Description</th>
+                <th>Prompt</th>
+                <th class="d-none d-md-table-cell">Created</th>
+                <th class="d-none d-md-table-cell">Updated</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -39,34 +39,34 @@ sort($groupIds, SORT_NUMERIC); // 数値として昇順に並べ替え
                 </a>
             </td>
             <td style="word-break: break-word;"><?= h($group['detail']) ?></td>
-            <td class="text-truncate" style="max-width: 200px;" title="<?= h($group['prompt_title'] ?? '未設定') ?>">
-                <?= h($group['prompt_title'] ?? '未設定') ?>
+            <td class="text-truncate" style="max-width: 200px;" title="<?= h($group['prompt_title'] ?? 'Not set') ?>">
+                <?= h($group['prompt_title'] ?? 'Not set') ?>
             </td>
             <td class="d-none d-md-table-cell"><?= h(date('Y/m/d H:i', strtotime($group['created_at']))) ?></td>
             <td class="d-none d-md-table-cell"><?= h(date('Y/m/d H:i', strtotime($group['updated_at']))) ?></td>
             <td>
                 <div class="d-flex flex-wrap gap-2">
                     <a href="groups.php?action=edit&id=<?= h($group['id']) ?>"
-                       class="btn btn-sm btn-warning">編集</a>
+                       class="btn btn-sm btn-warning">Edit</a>
                     <button type="button"
                             class="btn btn-sm btn-warning duplicate-group"
                             data-group-id="<?= h($group['id']) ?>"
-                            data-group-name="<?= h($group['name']) ?>">複製</button>
+                            data-group-name="<?= h($group['name']) ?>">Duplicate</button>
                     <button type="button"
                             class="btn btn-sm btn-warning bulk-task-register"
                             data-group-id="<?= h($group['id']) ?>"
                             data-group-name="<?= h($group['name']) ?>">
-                        タスク登録
+                        Register Tasks
                     </button>
                     <button type="button"
                             class="btn btn-sm btn-danger force-bulk-task-register"
                             data-group-id="<?= h($group['id']) ?>"
                             data-group-name="<?= h($group['name']) ?>">
-                        強制全タスク登録
+                        Force Register All Tasks
                     </button>
                     <a href="groups.php?action=delete&id=<?= h($group['id']) ?>"
                        class="btn btn-sm btn-danger"
-                       onclick="return confirm('本当に削除しますか？')">削除</a>
+                       onclick="return confirm('Are you sure you want to delete?')">Delete</a>
                 </div>
             </td>
         </tr>
@@ -76,29 +76,29 @@ sort($groupIds, SORT_NUMERIC); // 数値として昇順に並べ替え
 </div>
 
 <style>
-    /* テーブルセルのスタイル */
+    /* Table cell styles */
     .table td {
         vertical-align: middle;
     }
     
-    /* リンクテキストが省略される場合でもホバー可能に */
+    /* Make link text hoverable even when truncated */
     .text-truncate a {
         display: block;
         width: 100%;
     }
     
-    /* ツールチップのスタイル */
+    /* Tooltip styles */
     [title] {
         position: relative;
         cursor: help;
     }
 
-    /* ボタングループのスタイル */
+    /* Button group styles */
     .gap-2 {
         gap: 0.5rem !important;
     }
 
-    /* スマートフォンでの表示調整 */
+    /* Smartphone display adjustments */
     @media (max-width: 576px) {
         .table td {
             white-space: normal;
@@ -116,16 +116,16 @@ sort($groupIds, SORT_NUMERIC); // 数値として昇順に並べ替え
     }
 </style>
 
-<!-- 表示件数選択 -->
+<!-- Items per page selection -->
 <div class="row mb-3">
     <div class="col-auto">
         <form class="d-flex align-items-center" method="GET" action="groups.php">
             <input type="hidden" name="action" value="list">
             <input type="hidden" name="search" value="<?= h($searchTerm) ?>">
-            <label for="perPage" class="me-2">表示件数:</label>
+            <label for="perPage" class="me-2">Items per page:</label>
             <select id="perPage" name="per_page" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
                 <?php foreach ([10, 20, 50, 100] as $value): ?>
-                <option value="<?= $value ?>" <?= $perPage == $value ? 'selected' : '' ?>><?= $value ?>件</option>
+                <option value="<?= $value ?>" <?= $perPage == $value ? 'selected' : '' ?>><?= $value ?> items</option>
                 <?php endforeach; ?>
             </select>
         </form>
@@ -135,19 +135,19 @@ sort($groupIds, SORT_NUMERIC); // 数値として昇順に並べ替え
     </div>
 </div>
 
-<!-- ページネーション -->
+<!-- Pagination -->
 <?php if ($pagination['total_pages'] > 1): ?>
-<nav aria-label="ページナビゲーション">
+<nav aria-label="Page navigation">
     <ul class="pagination justify-content-center">
-        <!-- 前へボタン -->
+        <!-- Previous button -->
         <li class="page-item <?= !$pagination['has_previous'] ? 'disabled' : '' ?>">
-            <a class="page-link" href="<?= $pagination['has_previous'] ? 'groups.php?action=list&page=' . ($page - 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . '&per_page=' . $perPage : '#' ?>" aria-label="前のページ" <?= !$pagination['has_previous'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
+            <a class="page-link" href="<?= $pagination['has_previous'] ? 'groups.php?action=list&page=' . ($page - 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . '&per_page=' . $perPage : '#' ?>" aria-label="Previous page" <?= !$pagination['has_previous'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
                 <span aria-hidden="true">&laquo;</span>
-                <span class="visually-hidden">前のページ</span>
+                <span class="visually-hidden">Previous page</span>
             </a>
         </li>
 
-        <!-- ページ番号 -->
+        <!-- Page numbers -->
         <?php foreach ($pagination['pages'] as $p): ?>
             <?php if ($p === '...'): ?>
                 <li class="page-item disabled">
@@ -162,41 +162,41 @@ sort($groupIds, SORT_NUMERIC); // 数値として昇順に並べ替え
             <?php endif; ?>
         <?php endforeach; ?>
 
-        <!-- 次へボタン -->
+        <!-- Next button -->
         <li class="page-item <?= !$pagination['has_next'] ? 'disabled' : '' ?>">
-            <a class="page-link" href="<?= $pagination['has_next'] ? 'groups.php?action=list&page=' . ($page + 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . '&per_page=' . $perPage : '#' ?>" aria-label="次のページ" <?= !$pagination['has_next'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
+            <a class="page-link" href="<?= $pagination['has_next'] ? 'groups.php?action=list&page=' . ($page + 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . '&per_page=' . $perPage : '#' ?>" aria-label="Next page" <?= !$pagination['has_next'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
                 <span aria-hidden="true">&raquo;</span>
-                <span class="visually-hidden">次のページ</span>
+                <span class="visually-hidden">Next page</span>
             </a>
         </li>
     </ul>
 </nav>
 
-<!-- ページ番号直接入力フォーム -->
+<!-- Direct page number input form -->
 <div class="text-center mt-3">
     <form class="d-inline-flex align-items-center" method="GET" action="groups.php">
         <input type="hidden" name="action" value="list">
         <input type="hidden" name="search" value="<?= h($searchTerm) ?>">
         <input type="hidden" name="per_page" value="<?= $perPage ?>">
-        <label for="pageInput" class="me-2">ページ指定:</label>
+        <label for="pageInput" class="me-2">Go to page:</label>
         <input type="number" id="pageInput" name="page" class="form-control form-control-sm me-2" style="width: 80px;" min="1" max="<?= $pagination['total_pages'] ?>" value="<?= $page ?>">
-        <button type="submit" class="btn btn-sm btn-outline-primary">移動</button>
-        <span class="ms-2">/ <?= $pagination['total_pages'] ?>ページ</span>
+        <button type="submit" class="btn btn-sm btn-outline-primary">Go</button>
+        <span class="ms-2">/ <?= $pagination['total_pages'] ?> pages</span>
     </form>
 </div>
 <?php endif; ?>
 
-<!-- 既存のJavaScript -->
+<!-- Existing JavaScript -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(document).ready(function() {
-    // グループ複製機能
+    // Group duplication function
     $('.duplicate-group').click(function() {
         const $button = $(this);
         const groupId = $button.data('group-id');
         const groupName = $button.data('group-name');
 
-        if (confirm(`「${groupName}」グループを複製しますか？\nグループと関連するプレーンナレッジが複製されます。`)) {
+        if (confirm(`Do you want to duplicate the "${groupName}" group?\nThe group and related plain knowledge will be duplicated.`)) {
             $button.prop('disabled', true);
 
             $.ajax({
@@ -209,16 +209,16 @@ $(document).ready(function() {
                 dataType: 'json',
                 success: function(response) {
                     if (response.success) {
-                        alert('グループを複製しました。');
+                        alert('Group has been duplicated.');
                         location.reload();
                     } else {
-                        let errorMsg = 'エラーが発生しました: ' + response.message;
+                        let errorMsg = 'An error occurred: ' + response.message;
                         if (response.details) {
-                            errorMsg += '\n\n詳細情報:\n';
-                            errorMsg += `エラータイプ: ${response.details.error_type}\n`;
-                            errorMsg += `エラー発生箇所: ${response.details.error_file}:${response.details.error_line}\n`;
+                            errorMsg += '\n\nDetails:\n';
+                            errorMsg += `Error type: ${response.details.error_type}\n`;
+                            errorMsg += `Error location: ${response.details.error_file}:${response.details.error_line}\n`;
                             if (response.details.group_id) {
-                                errorMsg += `対象グループID: ${response.details.group_id}`;
+                                errorMsg += `Target group ID: ${response.details.group_id}`;
                             }
                         }
                         alert(errorMsg);
@@ -226,7 +226,7 @@ $(document).ready(function() {
                     }
                 },
                 error: function(xhr) {
-                    let errorMessage = '通信エラーが発生しました。';
+                    let errorMessage = 'A communication error occurred.';
                     try {
                         const response = JSON.parse(xhr.responseText);
                         if (response && response.message) {
@@ -242,7 +242,7 @@ $(document).ready(function() {
         }
     });
 
-    // タスク登録機能
+    // Task registration function
     $('.bulk-task-register, .force-bulk-task-register').click(function() {
         const $button = $(this);
         const groupId = $button.data('group-id');
@@ -250,8 +250,8 @@ $(document).ready(function() {
         const isForce = $button.hasClass('force-bulk-task-register');
         
         const confirmMessage = isForce
-            ? 'このグループの、すべてのナレッジを削除して、すべてのタスクを登録します。本当に良いですか？'
-            : `本当に「${groupName}」グループ内のすべてのプレーンナレッジをタスク登録してよろしいですか？更新対象となるナレッジは一旦削除されます`;
+            ? 'This will delete all knowledge in this group and register all tasks. Are you sure?'
+            : `Are you sure you want to register all plain knowledge in the "${groupName}" group as tasks? Knowledge to be updated will be deleted first.`;
 
         if (confirm(confirmMessage)) {
             $button.prop('disabled', true);
@@ -266,15 +266,15 @@ $(document).ready(function() {
                 dataType: 'json',
                 success: function(response) {
                     if (response.success) {
-                        alert('タスク登録が完了しました。');
+                        alert('Task registration completed.');
                     } else {
-                        let errorMsg = 'エラーが発生しました: ' + response.message;
+                        let errorMsg = 'An error occurred: ' + response.message;
                         if (response.details) {
-                            errorMsg += '\n\n詳細情報:\n';
-                            errorMsg += `エラータイプ: ${response.details.error_type}\n`;
-                            errorMsg += `エラー発生箇所: ${response.details.error_file}:${response.details.error_line}\n`;
+                            errorMsg += '\n\nDetails:\n';
+                            errorMsg += `Error type: ${response.details.error_type}\n`;
+                            errorMsg += `Error location: ${response.details.error_file}:${response.details.error_line}\n`;
                             if (response.details.group_id) {
-                                errorMsg += `対象グループID: ${response.details.group_id}`;
+                                errorMsg += `Target group ID: ${response.details.group_id}`;
                             }
                         }
                         alert(errorMsg);
@@ -282,7 +282,7 @@ $(document).ready(function() {
                     }
                 },
                 error: function(xhr) {
-                    let errorMessage = '通信エラーが発生しました。';
+                    let errorMessage = 'A communication error occurred.';
                     try {
                         const response = JSON.parse(xhr.responseText);
                         if (response && response.message) {

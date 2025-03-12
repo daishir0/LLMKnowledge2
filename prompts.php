@@ -9,11 +9,11 @@ require_once APP_ROOT . '/common/header.php';
 $action = $_GET['action'] ?? 'list';
 $searchTerm = $_GET['search'] ?? '';
 $page = max(1, intval($_GET['page'] ?? 1));
-$perPage = isset($_GET['per_page']) ? max(10, min(100, intval($_GET['per_page']))) : 10; // 10-100の範囲で制限
+$perPage = isset($_GET['per_page']) ? max(10, min(100, intval($_GET['per_page']))) : 10; // Limited to range 10-100
 
 switch ($action) {
     case 'list':
-        // 検索処理
+        // Search processing
         if ($searchTerm) {
             $records = search($pdo, 'prompts', $searchTerm, ['title', 'content']);
             $total = count($records);
@@ -47,7 +47,7 @@ switch ($action) {
         $id = $_GET['id'] ?? 0;
         $history_id = $_GET['history_id'] ?? 0;
         
-        // 履歴データの取得
+        // Get history data
         $stmt = $pdo->prepare("
             SELECT h.*, h.modified_by as modified_by_user
             FROM prompt_history h
@@ -57,7 +57,7 @@ switch ($action) {
         $history = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if (!$history) {
-            $_SESSION['error_message'] = "指定された履歴が見つかりません。";
+            $_SESSION['error_message'] = "The specified history was not found.";
             header("Location: prompts.php?action=view&id=" . $id);
             exit;
         }
@@ -65,7 +65,7 @@ switch ($action) {
         
     case 'view':
         $id = $_GET['id'] ?? 0;
-        // プロンプトの詳細情報を取得
+        // Get prompt details
         $stmt = $pdo->prepare("
             SELECT p.*,
                    COUNT(k.id) as usage_count
@@ -77,7 +77,7 @@ switch ($action) {
         $stmt->execute([':id' => $id]);
         $prompt = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        // このプロンプトを使用しているナレッジの一覧を取得
+        // Get list of knowledge using this prompt
         $stmt = $pdo->prepare("
             SELECT id, title, created_at
             FROM knowledge
@@ -87,7 +87,7 @@ switch ($action) {
         $stmt->execute([':prompt_id' => $id]);
         $relatedKnowledge = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        // 履歴の取得
+        // Get history
         $history = getHistory($pdo, 'prompt', $id);
         break;
 
@@ -104,7 +104,7 @@ switch ($action) {
                 try {
                     $pdo->beginTransaction();
                     
-                    // プロンプトの作成
+                    // Create prompt
                     $stmt = $pdo->prepare("
                         INSERT INTO prompts (
                             title,
@@ -126,7 +126,7 @@ switch ($action) {
                     $stmt->execute($data);
                     $id = $pdo->lastInsertId();
                     
-                    // 履歴の記録
+                    // Record history
                     $historyData = [
                         'title' => $data['title'],
                         'content' => $data['content']
@@ -135,7 +135,7 @@ switch ($action) {
                     
                     $pdo->commit();
                     
-                    // 一覧ページにリダイレクト
+                    // Redirect to list page
                     header("Location: prompts.php?action=list");
                     exit;
                 } catch (Exception $e) {
@@ -144,13 +144,13 @@ switch ($action) {
                 }
             } else {
                 $id = $_GET['id'];
-                // POSTデータの検証
+                // Validate POST data
                 if (empty($_POST['title']) || empty($_POST['content']) || empty($_POST['category'])) {
                     throw new Exception("Required fields are missing");
                 }
 
                 try {
-                    // プロンプトの更新
+                    // Update prompt
                     $updateData = [
                         'title' => $_POST['title'],
                         'content' => $_POST['content'],
@@ -171,7 +171,7 @@ switch ($action) {
                         throw new Exception("Failed to update prompt: " . print_r($stmt->errorInfo(), true));
                     }
 
-                    // 履歴の記録（エラーが発生しても処理は続行）
+                    // Record history (continue processing even if an error occurs)
                     try {
                         $historyData = [
                             'title' => $_POST['title'],
@@ -187,7 +187,7 @@ switch ($action) {
                     $success = date('Y-m-d H:i:s') . " Debug - Transaction committed successfully\n";
                     file_put_contents(dirname(__FILE__) . '/common/logs.txt', $success, FILE_APPEND);
                     
-                    // 詳細ページにリダイレクト
+                    // Redirect to detail page
                     header("Location: prompts.php?action=view&id=" . $id);
                     exit;
                     
@@ -197,8 +197,8 @@ switch ($action) {
                     $error .= date('Y-m-d H:i:s') . " Debug - Stack trace: " . $e->getTraceAsString() . "\n";
                     file_put_contents(dirname(__FILE__) . '/common/logs.txt', $error, FILE_APPEND);
                     
-                    // エラーメッセージをセッションに保存
-                    $_SESSION['error_message'] = "プロンプトの更新に失敗しました。";
+                    // Save error message to session
+                    $_SESSION['error_message'] = "Failed to update the prompt.";
                     header("Location: prompts.php?action=edit&id=" . $id);
                     exit;
                 }
@@ -217,13 +217,13 @@ switch ($action) {
             try {
                 $pdo->beginTransaction();
                 
-                // 元のプロンプトを取得
+                // Get original prompt
                 $stmt = $pdo->prepare("SELECT * FROM prompts WHERE id = :id AND deleted = 0");
                 $stmt->execute([':id' => $_GET['id']]);
                 $original = $stmt->fetch(PDO::FETCH_ASSOC);
                 
                 if ($original) {
-                    // 新しいプロンプトを作成
+                    // Create new prompt
                     $stmt = $pdo->prepare("
                         INSERT INTO prompts (
                             title,
@@ -252,7 +252,7 @@ switch ($action) {
                     $stmt->execute($data);
                     $newId = $pdo->lastInsertId();
                     
-                    // 履歴の記録
+                    // Record history
                     $historyData = [
                         'title' => $data['title'],
                         'content' => $data['content']
@@ -261,14 +261,14 @@ switch ($action) {
                     
                     $pdo->commit();
                     
-                    // 一覧ページにリダイレクト
+                    // Redirect to list page
                     header("Location: prompts.php?action=list");
                     exit;
                 }
             } catch (Exception $e) {
                 $pdo->rollBack();
                 error_log("Error in prompt duplication: " . $e->getMessage());
-                $_SESSION['error_message'] = "プロンプトの複製に失敗しました。";
+                $_SESSION['error_message'] = "Failed to duplicate the prompt.";
                 header("Location: prompts.php?action=list");
                 exit;
             }
@@ -290,42 +290,42 @@ switch ($action) {
 }
 ?>
 
-<!-- リスト表示画面 -->
+<!-- List display screen -->
 <?php if ($action === 'list'): ?>
-    <h1 class="mb-4">プロンプト管理</h1>
+    <h1 class="mb-4">Prompt Management</h1>
     
     <div class="row mb-4">
         <div class="col">
             <form class="d-flex" method="GET" action="prompts.php">
                 <input type="hidden" name="action" value="list">
                 <input type="search" name="search" class="form-control me-2" 
-                       value="<?= h($searchTerm) ?>" placeholder="検索...">
-                <button class="btn btn-outline-primary" type="submit">検索</button>
+                       value="<?= h($searchTerm) ?>" placeholder="Search...">
+                <button class="btn btn-outline-primary" type="submit">Search</button>
             </form>
         </div>
         <div class="col text-end">
-            <a href="prompts.php?action=create" class="btn btn-primary">新規作成</a>
+            <a href="prompts.php?action=create" class="btn btn-primary">Create New</a>
         </div>
     </div>
 
     <div class="table-responsive">
         <table class="table table-striped">
             <colgroup>
-                <col style="min-width: 80px; width: 80px;">  <!-- ID列 -->
-                <col style="min-width: 200px; max-width: 300px;">  <!-- タイトル列 -->
-                <col style="min-width: 150px; width: 150px;">  <!-- カテゴリ列 -->
-                <col style="min-width: 100px; width: 100px;">  <!-- 使用回数列 -->
-                <col style="min-width: 120px; width: 120px;">  <!-- 作成日時列 -->
-                <col style="min-width: 160px; width: 160px;">  <!-- 操作列 -->
+                <col style="min-width: 80px; width: 80px;">  <!-- ID column -->
+                <col style="min-width: 200px; max-width: 300px;">  <!-- Title column -->
+                <col style="min-width: 150px; width: 150px;">  <!-- Category column -->
+                <col style="min-width: 100px; width: 100px;">  <!-- Usage count column -->
+                <col style="min-width: 120px; width: 120px;">  <!-- Created date column -->
+                <col style="min-width: 160px; width: 160px;">  <!-- Actions column -->
             </colgroup>
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>タイトル</th>
-                    <th>カテゴリ</th>
-                    <th class="d-none d-md-table-cell">使用回数</th>
-                    <th class="d-none d-md-table-cell">作成日時</th>
-                    <th>操作</th>
+                    <th>Title</th>
+                    <th>Category</th>
+                    <th class="d-none d-md-table-cell">Usage Count</th>
+                    <th class="d-none d-md-table-cell">Created</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -339,22 +339,22 @@ switch ($action) {
                     </td>
                     <td>
                         <?php if ($record['category'] === 'plain_to_knowledge'): ?>
-                            <span class="badge bg-info">プレーン→ナレッジ</span>
+                            <span class="badge bg-info">Plain→Knowledge</span>
                         <?php else: ?>
-                            <span class="badge bg-success">ナレッジ→ナレッジ</span>
+                            <span class="badge bg-success">Knowledge→Knowledge</span>
                         <?php endif; ?>
                     </td>
                     <td class="d-none d-md-table-cell"><?= h($record['usage_count']) ?></td>
                     <td class="d-none d-md-table-cell"><?= h(date('Y/m/d H:i', strtotime($record['created_at']))) ?></td>
                     <td>
                         <a href="prompts.php?action=edit&id=<?= h($record['id']) ?>"
-                           class="btn btn-sm btn-warning me-2">編集</a>
+                           class="btn btn-sm btn-warning me-2">Edit</a>
                         <a href="prompts.php?action=duplicate&id=<?= h($record['id']) ?>"
                            class="btn btn-sm btn-warning me-2"
-                           onclick="return confirm('このプロンプトを複製しますか？')">複製</a>
+                           onclick="return confirm('Do you want to duplicate this prompt?')">Duplicate</a>
                         <a href="prompts.php?action=delete&id=<?= h($record['id']) ?>"
                            class="btn btn-sm btn-danger"
-                           onclick="return confirm('本当に削除しますか？')">削除</a>
+                           onclick="return confirm('Are you sure you want to delete?')">Delete</a>
                     </td>
                 </tr>
                 <?php endforeach; ?>
@@ -363,24 +363,24 @@ switch ($action) {
     </div>
 
     <style>
-        /* テーブルセルのスタイル */
+        /* Table cell styles */
         .table td {
             vertical-align: middle;
         }
         
-        /* リンクテキストが省略される場合でもホバー可能に */
+        /* Make truncated link text hoverable */
         .text-truncate a {
             display: block;
             width: 100%;
         }
         
-        /* ツールチップのスタイル */
+        /* Tooltip styles */
         [title] {
             position: relative;
             cursor: help;
         }
 
-        /* スマートフォンでのボタン表示調整 */
+        /* Smartphone button display adjustments */
         @media (max-width: 576px) {
             .btn {
                 display: block;
@@ -393,16 +393,16 @@ switch ($action) {
         }
     </style>
 
-    <!-- 表示件数選択 -->
+    <!-- Items per page selection -->
     <div class="row mb-3">
         <div class="col-auto">
             <form class="d-flex align-items-center" method="GET" action="prompts.php">
                 <input type="hidden" name="action" value="list">
                 <input type="hidden" name="search" value="<?= h($searchTerm) ?>">
-                <label for="perPage" class="me-2">表示件数:</label>
+                <label for="perPage" class="me-2">Items per page:</label>
                 <select id="perPage" name="per_page" class="form-select form-select-sm" style="width: auto;" onchange="this.form.submit()">
                     <?php foreach ([10, 20, 50, 100] as $value): ?>
-                    <option value="<?= $value ?>" <?= $perPage == $value ? 'selected' : '' ?>><?= $value ?>件</option>
+                    <option value="<?= $value ?>" <?= $perPage == $value ? 'selected' : '' ?>><?= $value ?> items</option>
                     <?php endforeach; ?>
                 </select>
             </form>
@@ -412,19 +412,19 @@ switch ($action) {
         </div>
     </div>
 
-    <!-- ページネーション -->
+    <!-- Pagination -->
     <?php if ($pagination['total_pages'] > 1): ?>
-    <nav aria-label="ページナビゲーション">
+    <nav aria-label="Page navigation">
         <ul class="pagination justify-content-center">
-            <!-- 前へボタン -->
+            <!-- Previous button -->
             <li class="page-item <?= !$pagination['has_previous'] ? 'disabled' : '' ?>">
-                <a class="page-link" href="<?= $pagination['has_previous'] ? 'prompts.php?action=list&page=' . ($page - 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . '&per_page=' . $perPage : '#' ?>" aria-label="前のページ" <?= !$pagination['has_previous'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
+                <a class="page-link" href="<?= $pagination['has_previous'] ? 'prompts.php?action=list&page=' . ($page - 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . '&per_page=' . $perPage : '#' ?>" aria-label="Previous page" <?= !$pagination['has_previous'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
                     <span aria-hidden="true">&laquo;</span>
-                    <span class="visually-hidden">前のページ</span>
+                    <span class="visually-hidden">Previous page</span>
                 </a>
             </li>
 
-            <!-- ページ番号 -->
+            <!-- Page numbers -->
             <?php foreach ($pagination['pages'] as $p): ?>
                 <?php if ($p === '...'): ?>
                     <li class="page-item disabled">
@@ -439,94 +439,94 @@ switch ($action) {
                 <?php endif; ?>
             <?php endforeach; ?>
 
-            <!-- 次へボタン -->
+            <!-- Next button -->
             <li class="page-item <?= !$pagination['has_next'] ? 'disabled' : '' ?>">
-                <a class="page-link" href="<?= $pagination['has_next'] ? 'prompts.php?action=list&page=' . ($page + 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . '&per_page=' . $perPage : '#' ?>" aria-label="次のページ" <?= !$pagination['has_next'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
+                <a class="page-link" href="<?= $pagination['has_next'] ? 'prompts.php?action=list&page=' . ($page + 1) . ($searchTerm ? '&search=' . h($searchTerm) : '') . '&per_page=' . $perPage : '#' ?>" aria-label="Next page" <?= !$pagination['has_next'] ? 'tabindex="-1" aria-disabled="true"' : '' ?>>
                     <span aria-hidden="true">&raquo;</span>
-                    <span class="visually-hidden">次のページ</span>
+                    <span class="visually-hidden">Next page</span>
                 </a>
             </li>
         </ul>
     </nav>
 
-    <!-- ページ番号直接入力フォーム -->
+    <!-- Direct page number input form -->
     <div class="text-center mt-3">
         <form class="d-inline-flex align-items-center" method="GET" action="prompts.php">
             <input type="hidden" name="action" value="list">
             <input type="hidden" name="search" value="<?= h($searchTerm) ?>">
             <input type="hidden" name="per_page" value="<?= $perPage ?>">
-            <label for="pageInput" class="me-2">ページ指定:</label>
+            <label for="pageInput" class="me-2">Go to page:</label>
             <input type="number" id="pageInput" name="page" class="form-control form-control-sm me-2" style="width: 80px;" min="1" max="<?= $pagination['total_pages'] ?>" value="<?= $page ?>">
-            <button type="submit" class="btn btn-sm btn-outline-primary">移動</button>
-            <span class="ms-2">/ <?= $pagination['total_pages'] ?>ページ</span>
+            <button type="submit" class="btn btn-sm btn-outline-primary">Go</button>
+            <span class="ms-2">/ <?= $pagination['total_pages'] ?> pages</span>
         </form>
     </div>
     <?php endif; ?>
 
-<!-- 履歴詳細表示画面 -->
+<!-- History detail view screen -->
 <?php elseif ($action === 'view_history'): ?>
-    <h1 class="mb-4">プロンプト履歴詳細</h1>
+    <h1 class="mb-4">Prompt History Details</h1>
     
     <div class="card mb-4">
         <div class="card-body">
             <h5 class="card-title"><?= h($history['title']) ?></h5>
             
             <div class="mb-3">
-                <h6>プロンプト内容</h6>
+                <h6>Prompt Content</h6>
                 <pre class="border p-3 bg-light"><?= h($history['content']) ?></pre>
             </div>
             
             <div class="mb-3">
-                <h6>変更情報</h6>
-                <p>変更日時：<?= h(date('Y/m/d H:i', strtotime($history['created_at']))) ?></p>
-                <p>変更者：<?= h($history['modified_by_user'] ?? '未設定') ?></p>
+                <h6>Change Information</h6>
+                <p>Change Date: <?= h(date('Y/m/d H:i', strtotime($history['created_at']))) ?></p>
+                <p>Modified By: <?= h($history['modified_by_user'] ?? 'Not set') ?></p>
             </div>
         </div>
     </div>
     
     <div class="mb-4">
-        <a href="prompts.php?action=view&id=<?= h($id) ?>" class="btn btn-secondary">戻る</a>
+        <a href="prompts.php?action=view&id=<?= h($id) ?>" class="btn btn-secondary">Back</a>
     </div>
 
-<!-- 詳細表示画面 -->
+<!-- Detail view screen -->
 <?php elseif ($action === 'view'): ?>
-    <h1 class="mb-4">プロンプト詳細</h1>
+    <h1 class="mb-4">Prompt Details</h1>
     
     <div class="card mb-4">
         <div class="card-body">
             <h5 class="card-title">
                 <?= h($prompt['title']) ?>
                 <?php if ($prompt['deleted'] == 1): ?>
-                    <span class="text-danger">（削除済み）</span>
+                    <span class="text-danger">(Deleted)</span>
                 <?php endif; ?>
             </h5>
             
             <div class="mb-3">
-                <h6>カテゴリ</h6>
+                <h6>Category</h6>
                 <p>
                     <?php if ($prompt['category'] === 'plain_to_knowledge'): ?>
-                        <span class="badge bg-info">プレーン→ナレッジ</span>
+                        <span class="badge bg-info">Plain→Knowledge</span>
                     <?php else: ?>
-                        <span class="badge bg-success">ナレッジ→ナレッジ</span>
+                        <span class="badge bg-success">Knowledge→Knowledge</span>
                     <?php endif; ?>
                 </p>
             </div>
             
             <div class="mb-3">
-                <h6>プロンプト内容</h6>
+                <h6>Prompt Content</h6>
                 <pre class="border p-3 bg-light"><?= h($prompt['content']) ?></pre>
             </div>
             
             <?php if ($relatedKnowledge): ?>
             <div class="mb-3">
-                <h6>このプロンプトを使用したナレッジ（<?= count($relatedKnowledge) ?>件）</h6>
+                <h6>Knowledge Using This Prompt (<?= count($relatedKnowledge) ?> items)</h6>
                 <ul>
                     <?php foreach ($relatedKnowledge as $knowledge): ?>
                     <li>
                         <a href="knowledge.php?action=view&id=<?= h($knowledge['id']) ?>">
                             <?= h($knowledge['title']) ?>
                         </a>
-                        <small class="text-muted">（<?= h($knowledge['created_at']) ?>）</small>
+                        <small class="text-muted">(<?= h($knowledge['created_at']) ?>)</small>
                     </li>
                     <?php endforeach; ?>
                 </ul>
@@ -535,14 +535,14 @@ switch ($action) {
         </div>
     </div>
 
-    <!-- 履歴表示 -->
-    <h3 class="mb-3">変更履歴</h3>
+    <!-- History display -->
+    <h3 class="mb-3">Change History</h3>
     <table class="table">
         <thead>
             <tr>
-                <th>変更日時</th>
-                <th>タイトル</th>
-                <th>変更者</th>
+                <th>Change Date</th>
+                <th>Title</th>
+                <th>Modified By</th>
             </tr>
         </thead>
         <tbody>
@@ -561,52 +561,52 @@ switch ($action) {
     </table>
 
     <div class="mb-4">
-        <a href="prompts.php?action=list" class="btn btn-secondary">戻る</a>
-        <a href="prompts.php?action=edit&id=<?= h($prompt['id']) ?>" 
-           class="btn btn-warning">編集</a>
+        <a href="prompts.php?action=list" class="btn btn-secondary">Back</a>
+        <a href="prompts.php?action=edit&id=<?= h($prompt['id']) ?>"
+           class="btn btn-warning">Edit</a>
     </div>
 
-<!-- 作成・編集画面 -->
+<!-- Create/Edit screen -->
 <?php else: ?>
     <h1 class="mb-4">
-        <?= $action === 'create' ? 'プロンプト作成' : 'プロンプト編集' ?>
+        <?= $action === 'create' ? 'Create Prompt' : 'Edit Prompt' ?>
     </h1>
     
     <form method="POST" class="needs-validation" novalidate>
         <div class="mb-3">
-            <label for="title" class="form-label">タイトル</label>
+            <label for="title" class="form-label">Title</label>
             <input type="text" class="form-control" id="title" name="title" 
                    value="<?= isset($prompt) ? h($prompt['title']) : '' ?>" required>
         </div>
         
         <div class="mb-3">
-            <label class="form-label">カテゴリ</label>
+            <label class="form-label">Category</label>
             <div class="form-check">
                 <input class="form-check-input" type="radio" name="category" 
                        id="category_p2k" value="plain_to_knowledge" 
                        <?= isset($prompt) && $prompt['category'] === 'plain_to_knowledge' ? 'checked' : '' ?>>
                 <label class="form-check-label" for="category_p2k">
-                    プレーン→ナレッジ
+                    Plain→Knowledge
                 </label>
             </div>
             <div class="form-check">
-                <input class="form-check-input" type="radio" name="category" 
+                <input class="form-check-input" type="radio" name="category"
                        id="category_k2k" value="knowledge_to_knowledge"
                        <?= isset($prompt) && $prompt['category'] === 'knowledge_to_knowledge' ? 'checked' : '' ?>>
                 <label class="form-check-label" for="category_k2k">
-                    ナレッジ→ナレッジ
+                    Knowledge→Knowledge
                 </label>
             </div>
         </div>
         
         <div class="mb-3">
-            <label for="content" class="form-label">プロンプト内容</label>
+            <label for="content" class="form-label">Prompt Content</label>
             <textarea class="form-control" id="content" name="content" rows="10" required><?= isset($prompt) ? h($prompt['content']) : '' ?></textarea>
-            ※{{reference}}は、referenceに登録された値にリプレースされます。
+            Note: {{reference}} will be replaced with the value registered in the reference field.
         </div>
         
-        <button type="submit" class="btn btn-primary">保存</button>
-        <a href="prompts.php?action=list" class="btn btn-secondary">キャンセル</a>
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a href="prompts.php?action=list" class="btn btn-secondary">Cancel</a>
     </form>
 <?php endif; ?>
 
