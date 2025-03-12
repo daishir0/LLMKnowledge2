@@ -39,7 +39,24 @@ if ($tasksTableExists) {
 <div class="row mb-4">
     <div class="col">
         <h1><?= SYSTEM_NAME ?> Dashboard</h1>
-                <p class="text-muted">Welcome to the Knowledge Management System</p>
+                <p class="text-muted">
+                <?php
+                if (defined('SHOW_RANDOM_QUOTES') && SHOW_RANDOM_QUOTES == 1) {
+                    $quotes = [
+                        "Those who have suffered the most deserve the greatest happiness",
+                        "When we care for others our own strength to live increases",
+                        "It takes courage to become happy",
+                        "Hardships make us strong. Problems give birth to wisdom. Sorrows cultivate compassion",
+                        "To move steadily forward on one's chosen path, step after step, whether or not others are watching",
+                        "Friendship is the most beautiful, most powerful and most valuable treasure in life",
+                        "A smile is not only the result of happiness but can also be the cause of happiness"
+                    ];
+                    echo $quotes[array_rand($quotes)];
+                } else {
+                    echo "Welcome to the " . SYSTEM_NAME;
+                }
+                ?>
+                </p>
     </div>
 </div>
 

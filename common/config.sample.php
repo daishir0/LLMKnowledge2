@@ -16,6 +16,9 @@ define('BASE_URL', $base_url);
 // システム名を定義、初期設定時に変えること(TODO)
 define('SYSTEM_NAME', 'LLMKnowledge2');
 
+// ランダム引用文の表示フラグ（1:表示する、0:表示しない）
+define('SHOW_RANDOM_QUOTES', 0);
+
 $db_path = dirname(__DIR__) . '/knowledge.db';
 $pdo = new PDO("sqlite:$db_path");
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
