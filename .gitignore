@@ -30,4 +30,5 @@ Thumbs.db
 /logs/
 /common/logs.txt
 /common/gomi
-/paper
+/paper*
+/tmp_scripts

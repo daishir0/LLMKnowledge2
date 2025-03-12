@@ -11,6 +11,26 @@ $page = max(1, intval($_GET['page'] ?? 1));
 $perPage = isset($_GET['per_page']) ? max(10, min(100, intval($_GET['per_page']))) : 10; // 10-100の範囲で制限
 
 switch ($action) {
+    case 'delete_pending':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // statusが'pending'のタスクのdeletedフラグを1に設定
+            $stmt = $pdo->prepare("
+                UPDATE tasks
+                SET deleted = 1,
+                    updated_at = '$timestamp'
+                WHERE status = 'pending'
+                AND deleted = 0
+            ");
+            $stmt->execute();
+            $affected = $stmt->rowcount();
+            
+            // JSON形式でレスポンスを返す
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true, 'message' => "{$affected}件のPendingタスクを削除しました。"]);
+            exit;
+        }
+        break;
+        
     case 'list':
         // 検索処理
         if ($searchTerm) {
@@ -103,7 +123,6 @@ switch ($action) {
         break;
 }
 ?>
-
 <!-- リスト表示画面 -->
 <?php if ($action === 'list'): ?>
     <h1 class="mb-4">タスク管理</h1>
@@ -112,10 +131,13 @@ switch ($action) {
         <div class="col">
             <form class="d-flex" method="GET" action="tasks.php">
                 <input type="hidden" name="action" value="list">
-                <input type="search" name="search" class="form-control me-2" 
+                <input type="search" name="search" class="form-control me-2"
                        value="<?= h($searchTerm) ?>" placeholder="検索...">
                 <button class="btn btn-outline-primary" type="submit">検索</button>
             </form>
+        </div>
+        <div class="col text-end">
+            <button id="deletePendingTasksBtn" class="btn btn-danger">Pendingのタスクを削除する</button>
         </div>
     </div>
 
@@ -371,4 +393,40 @@ switch ($action) {
 
 <?php endif; ?>
 
-<?php require_once APP_ROOT . '/common/footer.php'; ?> 
+<!-- JavaScriptコード -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Pendingタスク削除ボタンのイベントリスナー
+    const deletePendingBtn = document.getElementById('deletePendingTasksBtn');
+    if (deletePendingBtn) {
+        deletePendingBtn.addEventListener('click', function() {
+            // 確認ダイアログを表示
+            if (confirm('本当にすべてのPendingタスクを削除しますか？この操作は元に戻せません。')) {
+                // Ajaxリクエストを送信
+                fetch('tasks.php?action=delete_pending', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        // ページをリロード
+                        window.location.reload();
+                    } else {
+                        alert('エラーが発生しました: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('エラーが発生しました。');
+                });
+            }
+        });
+    }
+});
+</script>
+
+<?php require_once APP_ROOT . '/common/footer.php'; ?>
