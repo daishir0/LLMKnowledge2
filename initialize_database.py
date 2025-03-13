@@ -46,11 +46,11 @@ def initialize_database(db_path):
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             detail TEXT,
-            task_executed_at DATETIME,
-            prompt_id INTEGER,
+            task_executed_at DATETIME DEFAULT NULL,
+            prompt_id INTEGER DEFAULT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            deleted INTEGER DEFAULT 0
+            deleted INTEGER DEFAULT 0,
             FOREIGN KEY (prompt_id) REFERENCES prompts(id)
         );
         """)
@@ -173,6 +173,7 @@ def initialize_database(db_path):
         print("Creating indexes...")
         cursor.execute("CREATE INDEX idx_record_search ON record(title, text);")
         cursor.execute("CREATE INDEX idx_knowledge_search ON knowledge(title, question, answer);")
+        cursor.execute("CREATE INDEX idx_knowledge_group ON knowledge(group_id);")
         cursor.execute("CREATE INDEX idx_prompts_search ON prompts(title, content);")
         
         # タスクテーブル用インデックス

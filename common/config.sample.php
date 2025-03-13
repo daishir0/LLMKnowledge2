@@ -1,6 +1,6 @@
 <?php
 // エラーログの設定、初期設定時に変えること(TODO)
-ini_set('log_errors', 1);
+ini_set('log_errors', 0);
 ini_set('error_log', dirname(__FILE__) . '/logs.txt');
 error_reporting(E_ALL);
 
@@ -15,6 +15,9 @@ define('BASE_URL', $base_url);
 
 // システム名を定義、初期設定時に変えること(TODO)
 define('SYSTEM_NAME', 'LLMKnowledge2');
+
+// ヘッダーの色を定義（HTMLカラーコード）
+define('HEADER_COLOR', '#000000');
 
 // ランダム引用文の表示フラグ（1:表示する、0:表示しない）
 define('SHOW_RANDOM_QUOTES', 0);
@@ -32,14 +35,6 @@ $auth_config = [
 
 // API設定
 $api_config = [
-    'openai' => [
-        'api_key' => '', // OpenAI APIキーを設定してください
-        'base_url' => 'https://api.openai.com/v1',
-    ],
-    'claude' => [
-        'api_key' => '', // Anthropic APIキーを設定してください
-        'base_url' => 'https://api.anthropic.com/v1',
-    ],
     'markitdown' => [
         'api_key' => '', // MarkItDownServerの APIキーを設定してください see https://github.com/daishir0/MarkItDownServer
         'base_url' => 'https://mark-it-down-server.url',
