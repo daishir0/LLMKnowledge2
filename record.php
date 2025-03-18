@@ -21,7 +21,7 @@ switch ($action) {
                 error_log('Upload started. File info: ' . print_r($_FILES['file'], true), 3, './common/logs.txt');
 
                 // ファイルの一時保存
-                $tmpPath = '/tmp/' . basename($_FILES['file']['name']);
+                $tmpPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . basename($_FILES['file']['name']);
                 error_log('Attempting to move file to: ' . $tmpPath, 3, './common/logs.txt');
 
                 if (!move_uploaded_file($_FILES['file']['tmp_name'], $tmpPath)) {
