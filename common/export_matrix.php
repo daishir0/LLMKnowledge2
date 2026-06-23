@@ -36,42 +36,53 @@ try {
     $group_ids_str = implode(',', $group_ids);
 
     // グループ情報を取得（ユーザーが指定した順序を保持）
+    $groups_query = "
+        SELECT id, name
+        FROM groups
+        WHERE id IN ($group_ids_str)
+        AND deleted = 0
+    ";
+    $groups_result = $pdo->query($groups_query)->fetchAll(PDO::FETCH_ASSOC);
+    
+    $groups_by_id = [];
+    foreach ($groups_result as $group) {
+        $groups_by_id[$group['id']] = $group;
+    }
+    
     $groups = [];
     foreach ($group_ids as $group_id) {
-        $group_query = "
-            SELECT id, name
-            FROM groups
-            WHERE id = :group_id
-            AND deleted = 0
-        ";
-        $stmt = $pdo->prepare($group_query);
-        $stmt->execute([':group_id' => $group_id]);
-        $group = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($group) {
-            $groups[] = $group;
+        if (isset($groups_by_id[$group_id])) {
+            $groups[] = $groups_by_id[$group_id];
         }
     }
     
-    // 各グループに関連するプロンプトを取得
+    // 各グループに関連するプロンプトを一括取得
+    $prompts_query = "
+        SELECT DISTINCT p.id, p.title, k.group_id
+        FROM prompts p
+        JOIN knowledge k ON k.prompt_id = p.id
+        WHERE k.group_id IN ($group_ids_str)
+        AND k.deleted = 0
+        ORDER BY k.group_id, p.id
+    ";
+    $prompts_result = $pdo->query($prompts_query)->fetchAll(PDO::FETCH_ASSOC);
+    
     $group_prompts = [];
     foreach ($groups as $group) {
-        $prompts_query = "
-            SELECT DISTINCT p.id, p.title
-            FROM prompts p
-            JOIN knowledge k ON k.prompt_id = p.id
-            WHERE k.group_id = :group_id
-            AND k.deleted = 0
-            ORDER BY p.id
-        ";
-        $stmt = $pdo->prepare($prompts_query);
-        $stmt->execute([':group_id' => $group['id']]);
-        $prompts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
         $group_prompts[$group['id']] = [
             'name' => $group['name'],
-            'prompts' => $prompts
+            'prompts' => []
         ];
+    }
+    
+    foreach ($prompts_result as $prompt) {
+        $group_id = $prompt['group_id'];
+        if (isset($group_prompts[$group_id])) {
+            $group_prompts[$group_id]['prompts'][] = [
+                'id' => $prompt['id'],
+                'title' => $prompt['title']
+            ];
+        }
     }
 
     // プレーンナレッジを加えるかどうかのフラグ
